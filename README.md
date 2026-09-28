@@ -390,6 +390,12 @@ inglês". O resultado aparece no painel, com botões copiar e `.md`.
 3. Toque em **Parar live** (ou escreva "parar live") → gera **resumo** e botão
    de **export .md**
 
+> O diálogo de compartilhamento é normal quando a captura direta da aba não
+> está disponível: escolha a **guia** da live e deixe
+> **"Compartilhar áudio da guia"** marcado. Se o pipeline atrasar (live muito
+> rápida), o Javis descarta os trechos mais antigos para manter a tradução em
+> PT-BR — prefere traduzir tudo a mostrar inglês.
+
 > Dica: use a fonte **Aba** para capturar o áudio do vídeo/áudio da call; o
 > microfone perto da caixa de som capta eco e distorce. Se a aba pedir
 > permissão de captura, permita.

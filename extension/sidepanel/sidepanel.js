@@ -668,13 +668,15 @@ function drainLiveQueue() {
   if (drainPromise) return drainPromise;
   drainPromise = (async () => {
     while (liveQueue.length && (liveActive || flushing)) {
+      if (liveLang !== "pt" && liveQueue.length > 2) {
+        liveQueue.splice(0, liveQueue.length - 2);
+      }
       const blob = liveQueue.shift();
       try {
         const raw = await transcribeSegment(blob, liveLang);
         if (!raw) continue;
-        const skipTranslate = liveQueue.length >= 2;
         const out =
-          liveLang === "pt" ? raw : skipTranslate ? raw : await daemonTranslate(raw).catch(() => raw);
+          liveLang === "pt" ? raw : (await daemonTranslate(raw).catch(() => "")) || raw;
         const clock = mmss(Date.now() - liveStart);
         appendLive(`[${clock}] ${out}`);
         liveSegments.push(`[${clock}] ${out}`);
@@ -689,7 +691,7 @@ function drainLiveQueue() {
 
 async function acquireLiveStream(source) {
   if (source === "mic") {
-    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
+    return { stream: await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } }), via: "mic" };
   }
   try {
     if (!chrome.tabCapture?.capture) throw new Error("tabCapture indisponível");
@@ -705,14 +707,14 @@ async function acquireLiveStream(source) {
       audio.srcObject = stream;
       audio.play().catch(() => {});
     } catch {}
-    return stream;
+    return { stream, via: "tabCapture" };
   } catch (e) {
     const s = await navigator.mediaDevices.getDisplayMedia({
       video: true,
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
     });
     s.getVideoTracks().forEach((t) => t.stop());
-    return new MediaStream(s.getAudioTracks());
+    return { stream: new MediaStream(s.getAudioTracks()), via: "share" };
   }
 }
 
@@ -759,17 +761,19 @@ async function stopLive() {
 async function startLive(source, lang) {
   if (busy) return;
   liveLang = lang === "pt" ? "pt" : "en";
+  let cap = null;
   try {
-    liveStream = await acquireLiveStream(source);
+    cap = await acquireLiveStream(source);
   } catch (e) {
     addMsg(
       "err",
       "Live: não foi possível capturar o áudio (" +
         (e?.message || e) +
-        "). Dica: para tocar música/vídeo use 'Aba'; o microfone perto da caixa de som capta eco e distorce."
+        "). Dica: escolha a guia no diálogo e deixe 'Compartilhar áudio da guia' marcado."
     );
     return;
   }
+  liveStream = cap.stream;
   liveActive = true;
   liveStart = Date.now();
   liveSegments.length = 0;
@@ -777,10 +781,19 @@ async function startLive(source, lang) {
   liveQueue.length = 0;
   liveBubble = null;
   $("live-btn").textContent = "Parar live";
+  const via =
+    source === "mic"
+      ? "Live iniciada com o microfone"
+      : cap.via === "share"
+        ? "Live iniciada com o áudio da guia (compartilhamento)"
+        : "Live iniciada com o áudio desta aba";
   addMsg(
     "ai",
-    (source === "mic" ? "Live iniciada com o microfone" : "Live iniciada com o áudio desta aba") +
-      (liveLang === "pt" ? " — transcrevendo em português." : " — traduzindo ao vivo para PT-BR.")
+    via +
+      (liveLang === "pt" ? " — transcrevendo em português." : " — traduzindo ao vivo para PT-BR.") +
+      (cap.via === "share"
+        ? " (o diálogo de compartilhamento é normal: escolha a guia e deixe o áudio da guia marcado)"
+        : "")
   );
   liveRecorder = startSegmentRecorder(liveStream);
   if (!liveRecorder) {
