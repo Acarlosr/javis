@@ -45,41 +45,51 @@
     <main id="log" class="log">
       <div class="welcome">
         <h1>Javis</h1>
-        <p>Seu mordomo de IA no navegador — pergunte ou use uma ação rápida:</p>
+        <p>Seu mordomo de IA no navegador — pergunte aqui ou toque em "Ações ⚡".</p>
       </div>
     </main>
 
     <div class="actions">
-      <button class="chip" data-action="page">Resumir página</button>
-      <button class="chip" data-action="youtube">Resumir YouTube</button>
-      <select id="yt-style" class="chip select" title="Estilo do resumo do YouTube">
-        <option value="padrao">Resumo padrão</option>
-        <option value="topicos">Resumo por tópicos</option>
-        <option value="indice">Índice com tempos</option>
-      </select>
-      <button class="chip" data-action="youtube">YouTube</button>
-      <select id="discord-days" class="chip select" title="Período do resumo do Discord">
-        <option value="1">24 horas</option>
-        <option value="10">10 dias</option>
-        <option value="14" selected>14 dias</option>
-        <option value="20">20 dias</option>
-        <option value="30">30 dias</option>
-        <option value="90">90 dias</option>
-      </select>
-      <button class="chip" data-action="discord">Discord</button>
-      <select id="live-src" class="chip select" title="Fonte e idioma do áudio para o modo live">
-        <option value="tab:en">Aba · inglês → PT-BR</option>
-        <option value="tab:pt">Aba · português</option>
-        <option value="mic:en">Mic · inglês → PT-BR</option>
-        <option value="mic:pt">Mic · português</option>
-      </select>
-      <button class="chip" data-action="live" id="live-btn">Live PT-BR</button>
-      <select id="sel-lang" class="chip select" title="Idioma alvo da tradução da seleção">
-        <option value="pt" selected>Seleção → PT-BR</option>
-        <option value="en">Seleção → EN</option>
-      </select>
-      <button class="chip" data-action="seltrans" id="seltrans-btn">Traduzir seleção</button>
-      <button class="chip" data-action="translate">Página → PT-BR</button>
+      <button id="btn-actions" class="chip" title="Ações rápidas">Ações ⚡</button>
+      <div id="actions-menu" class="hidden">
+        <button data-action="page">Resumir página</button>
+        <div class="am-row">
+          <button data-action="youtube">Resumir YouTube</button>
+          <select id="yt-style" title="Estilo do resumo do YouTube">
+            <option value="padrao">padrão</option>
+            <option value="topicos">tópicos</option>
+            <option value="indice">índice c/ tempos</option>
+          </select>
+        </div>
+        <div class="am-row">
+          <button data-action="discord">Resumir Discord</button>
+          <select id="discord-days" title="Período do resumo do Discord">
+            <option value="1">24 horas</option>
+            <option value="10">10 dias</option>
+            <option value="14" selected>14 dias</option>
+            <option value="20">20 dias</option>
+            <option value="30">30 dias</option>
+            <option value="90">90 dias</option>
+          </select>
+        </div>
+        <div class="am-row">
+          <button data-action="live" id="live-btn">Live PT-BR</button>
+          <select id="live-src" title="Fonte e idioma do áudio para o modo live">
+            <option value="tab:en">aba · inglês → PT</option>
+            <option value="tab:pt">aba · português</option>
+            <option value="mic:en">mic · inglês → PT</option>
+            <option value="mic:pt">mic · português</option>
+          </select>
+        </div>
+        <div class="am-row">
+          <button data-action="seltrans" id="seltrans-btn">Traduzir seleção</button>
+          <select id="sel-lang" title="Idioma alvo da tradução da seleção">
+            <option value="pt" selected>→ PT-BR</option>
+            <option value="en">→ EN</option>
+          </select>
+        </div>
+        <button data-action="translate">Página → PT-BR</button>
+      </div>
     </div>
 
     <div id="listening" class="listening hidden">

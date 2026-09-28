@@ -948,12 +948,105 @@ async function autoCollectDiscord(prompt) {
   };
 }
 
-$("send").addEventListener("click", () => {
-  const v = $("input").value.trim();
-  if (!v) return;
-  $("input").value = "";
-  send(v);
-});
+function youtubePrompt(style) {
+  const prompts = {
+    padrao: {
+      label: "Resumir YouTube",
+      ask: "Resuma este vídeo: principais ideias, conclusões e algo prático para aplicar.",
+      task: "resumo com principais ideias, conclusões e algo prático para aplicar",
+    },
+    topicos: {
+      label: "YouTube por tópicos",
+      ask: "Resuma este vídeo por tópicos: seções bem separadas, com os pontos mais importantes de cada uma.",
+      task: "resumo por tópicos, com seções bem separadas e os pontos mais importantes de cada uma",
+    },
+    indice: {
+      label: "Índice do YouTube",
+      ask: "Crie um índice dos principais assuntos deste vídeo usando os marcadores [MM:SS] da transcrição, no formato '[MM:SS] Assunto — descrição em uma linha', em ordem cronológica.",
+      task:
+        "índice cronológico dos principais assuntos, um por linha, no formato '[MM:SS] Assunto — descrição em uma linha', usando os marcadores [MM:SS] da transcrição",
+    },
+  };
+  return prompts[style] || prompts.padrao;
+}
+
+function runPageSummary() {
+  send("Resuma esta página em tópicos claros, com os pontos mais importantes primeiro.", {
+    label: "Resumir página atual",
+    onContext: () => askPage("resumo em tópicos"),
+  });
+}
+
+function runYoutube(style) {
+  const p = youtubePrompt(style);
+  send(p.ask, {
+    label: p.label,
+    onContext: async () => {
+      const r = await chrome.runtime.sendMessage({ type: "getYoutubeTranscript" });
+      if (!r?.ok) throw new Error(r?.error || "falha no YouTube");
+      const note = r.title + (r.hasCaptions ? ` (${r.lang || "?"})` : " — sem legendas");
+      return {
+        note,
+        prompt: `Transcrição do vídeo "${r.title}":\n\n${r.transcript || "(vazia)"}\n\nTarefa: ${p.task}.`,
+      };
+    },
+  });
+}
+
+async function runSelTrans(target) {
+  target = target === "en" ? "en" : "pt";
+  if (busy) return;
+  setBusy(true);
+  $("seltrans-btn").textContent = "Traduzindo…";
+  try {
+    const r = await chrome.runtime.sendMessage({
+      type: "getSelectionTranslate",
+      target,
+    });
+    if (!r?.ok) throw new Error(r?.error || "falha na tradução da seleção");
+    addMsg("ai", r.text, `seleção da página → ${target === "en" ? "EN" : "PT-BR"}`);
+  } catch (e) {
+    addMsg("err", "seleção: " + (e?.message || e));
+  } finally {
+    setBusy(false);
+    $("seltrans-btn").textContent = "Traduzir seleção";
+  }
+}
+
+function runTranslatePage() {
+  send("Traduza o conteúdo da página para português brasileiro, mantendo nomes e termos técnicos.", {
+    label: "Página → PT-BR (inteira)",
+    onContext: () => askPage("traduza o texto para PT-BR, preservando estrutura e termos técnicos"),
+  });
+}
+
+function detectIntent(text) {
+  const t = text.toLowerCase();
+  if (/\b(live|ao vivo)\b/.test(t) && !/(resum|hist[óo]ri|traduz|discord|v[íi]deo|youtube)/.test(t)) {
+    const src = /(mic|microf|microfone)/.test(t) ? "mic" : "tab";
+    const lang = /(portugu|em pt|\bpt\b|\bbr\b|português)/.test(t) ? "pt" : "en";
+    return { type: "live", stop: /(par[ae]|stop|encerrar|desligar|cancelar|pausar)/.test(t), src, lang };
+  }
+  if (/(traduz|tradu[cç][ãa]o)/.test(t) && /(sele|isso|trecho|selecion)/.test(t)) {
+    const target = /(ingl[êe]s|\ben\b|english)/.test(t) ? "en" : "pt";
+    return { type: "seltrans", target };
+  }
+  if (/(youtube|\bv[íi]deos?\b)/.test(t) && /(resum|t[óo]picos|índice|indice|pontos|sobre|explique|o que)/.test(t)) {
+    const style = /(índice|indice|tempos|timestamps)/.test(t)
+      ? "indice"
+      : /t[óo]picos/.test(t)
+        ? "topicos"
+        : "padrao";
+    return { type: "youtube", style };
+  }
+  if (/(resum|sumariz)/.test(t) && /(p[áa]gina|site|artigo)/.test(t) && !/(youtube|v[íi]deo)/.test(t)) {
+    return { type: "page" };
+  }
+  if (/(traduz|tradu[cç][ãa]o)/.test(t) && /(p[áa]gina|site|conte[úu]do|tudo)/.test(t)) {
+    return { type: "translate" };
+  }
+  return null;
+}
 $("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -965,48 +1058,22 @@ $("input").addEventListener("input", () => {
   $("input").style.height = Math.min($("input").scrollHeight, 120) + "px";
 });
 
-document.querySelectorAll(".chip").forEach((chip) => {
-  chip.addEventListener("click", async () => {
+const actionsMenu = $("actions-menu");
+$("btn-actions").addEventListener("click", () => actionsMenu.classList.toggle("hidden"));
+document.addEventListener("mousedown", (e) => {
+  if (actionsMenu.contains(e.target) || e.target.closest?.("#btn-actions")) return;
+  actionsMenu.classList.add("hidden");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !actionsMenu.classList.contains("hidden")) actionsMenu.classList.add("hidden");
+});
+
+document.querySelectorAll("#actions-menu [data-action]").forEach((chip) => {
+  chip.addEventListener("click", () => {
     const action = chip.dataset.action;
-    if (action === "page") {
-      send(
-        "Resuma esta página em tópicos claros, com os pontos mais importantes primeiro.",
-        { label: "Resumir página atual", onContext: () => askPage("resumo em tópicos") }
-      );
-    } else if (action === "youtube") {
-      const style = $("yt-style").value || "padrao";
-      const prompts = {
-        padrao: {
-          label: "Resumir YouTube",
-          ask: "Resuma este vídeo: principais ideias, conclusões e algo prático para aplicar.",
-          task: "resumo com principais ideias, conclusões e algo prático para aplicar",
-        },
-        topicos: {
-          label: "YouTube por tópicos",
-          ask: "Resuma este vídeo por tópicos: seções bem separadas, com os pontos mais importantes de cada uma.",
-          task: "resumo por tópicos, com seções bem separadas e os pontos mais importantes de cada uma",
-        },
-        indice: {
-          label: "Índice do YouTube",
-          ask: "Crie um índice dos principais assuntos deste vídeo usando os marcadores [MM:SS] da transcrição, no formato '[MM:SS] Assunto — descrição em uma linha', em ordem cronológica.",
-          task:
-            "índice cronológico dos principais assuntos, um por linha, no formato '[MM:SS] Assunto — descrição em uma linha', usando os marcadores [MM:SS] da transcrição",
-        },
-      };
-      const p = prompts[style] || prompts.padrao;
-      send(p.ask, {
-        label: p.label,
-        onContext: async () => {
-          const r = await chrome.runtime.sendMessage({ type: "getYoutubeTranscript" });
-          if (!r?.ok) throw new Error(r?.error || "falha no YouTube");
-          const note = r.title + (r.hasCaptions ? ` (${r.lang || "?"})` : " — sem legendas");
-          return {
-            note,
-            prompt: `Transcrição do vídeo "${r.title}":\n\n${r.transcript || "(vazia)"}\n\nTarefa: ${p.task}.`,
-          };
-        },
-      });
-    } else if (action === "live") {
+    if (action === "page") runPageSummary();
+    else if (action === "youtube") runYoutube($("yt-style").value || "padrao");
+    else if (action === "live") {
       if (liveActive) {
         stopLive();
         return;
@@ -1039,33 +1106,44 @@ document.querySelectorAll(".chip").forEach((chip) => {
         }
       );
     } else if (action === "seltrans") {
-      const target = ($("sel-lang").value || "pt") === "en" ? "en" : "pt";
-      if (busy) return;
-      setBusy(true);
-      $("seltrans-btn").textContent = "Traduzindo…";
-      try {
-        const r = await chrome.runtime.sendMessage({
-          type: "getSelectionTranslate",
-          target,
-        });
-        if (!r?.ok) throw new Error(r?.error || "falha na tradução da seleção");
-        addMsg("ai", r.text, `seleção da página → ${target === "en" ? "EN" : "PT-BR"}`);
-      } catch (e) {
-        addMsg("err", "seleção: " + (e?.message || e));
-      } finally {
-        setBusy(false);
-        $("seltrans-btn").textContent = "Traduzir seleção";
-      }
+      runSelTrans($("sel-lang").value || "pt");
     } else if (action === "translate") {
-      send(
-        "Traduza o conteúdo da página para português brasileiro, mantendo nomes e termos técnicos.",
-        {
-          label: "Página → PT-BR (inteira)",
-          onContext: () => askPage("traduza o texto para PT-BR, preservando estrutura e termos técnicos"),
-        }
-      );
+      runTranslatePage();
     }
   });
+});
+
+$("send").addEventListener("click", () => {
+  const v = $("input").value.trim();
+  if (!v) return;
+  $("input").value = "";
+  $("input").style.height = "auto";
+  const it = detectIntent(v);
+  if (it?.type === "live") {
+    if (it.stop) {
+      if (liveActive) stopLive();
+    } else {
+      startLive(it.src, it.lang);
+    }
+    return;
+  }
+  if (it?.type === "seltrans") {
+    runSelTrans(it.target);
+    return;
+  }
+  if (it?.type === "youtube") {
+    runYoutube(it.style);
+    return;
+  }
+  if (it?.type === "page") {
+    runPageSummary();
+    return;
+  }
+  if (it?.type === "translate") {
+    runTranslatePage();
+    return;
+  }
+  send(v);
 });
 
 $("btn-config").addEventListener("click", () => chrome.runtime.openOptionsPage());

@@ -344,23 +344,33 @@ para `ggml-base.bin` ou ajuste com a variável abaixo.
 
 ## Uso (tutorial)
 
-Abra a página/vídeo/canal desejado, clique no ícone do Javis e use os chips
-(botões) da barra inferior:
+Abra a página/vídeo/canal desejado, clique no ícone do Javis e:
+
+- **Escreva o que precisa** — o Javis entende o pedido e executa a ação certa
+  ("resuma o youtube por tópicos", "resuma esta página", "traduza a página",
+  "traduza isso para inglês", "live pelo microfone em português", "parar live",
+  "resuma os últimos 20 dias" no Discord...). Parâmetros omitidos caem nos
+  padrões pré-configurados: YouTube → resumo padrão, Discord → 14 dias,
+  live → aba em inglês → PT-BR.
+- Ou toque no botão **Ações ⚡** — um menu compacto com as mesmas ações e seus
+  seletor de detalhes (estilo do resumo, período, fonte/idioma, idioma alvo).
 
 ### Resumir página
-Clique em **Resumir página**. Ele lê o texto visível da aba e responde em
-tópicos.
+**Ações ⚡ → Resumir página** (ou escreva "resuma esta página"). Ele lê o texto
+visível da aba e responde em tópicos.
 
 ### Resumir YouTube
-Abra o vídeo, escolha o **estilo** no seletor (padrão / tópicos / índice com
-tempos) e clique em **Resumir YouTube**. Funciona com `watch`, `shorts` e
-`live`; o índice usa os marcadores `[MM:SS]` da transcrição.
+Abra o vídeo e use **Ações ⚡ → Resumir YouTube** escolhendo o **estilo** no
+menu (padrão / tópicos / índice com tempos) — ou escreva "resuma o youtube",
+"resuma o vídeo por tópicos", "faça o índice do vídeo". Funciona com `watch`,
+`shorts` e `live`; o índice usa os marcadores `[MM:SS]` da transcrição.
 
 ### Discord: resumo por período
-Abra o canal, escolha o **período** (24h, 10, 14, 20, 30 ou 90 dias) e clique
-em **Discord**. O Javis rola o chat até cobrir o período (faixa de progresso
-azul e mensagens piscando), coleta tudo e resume por assuntos, decisões e
-pendências citando quem falou.
+Abra o canal e use **Ações ⚡ → Resumir Discord** escolhendo o **período**
+(24h, 10, 14, 20, 30 ou 90 dias) — ou escreva "resuma os últimos 20 dias". O
+Javis rola o chat até cobrir o período (faixa de progresso azul e mensagens
+piscando), coleta tudo e resume por assuntos, decisões e pendências citando
+quem falou.
 
 ### Discord: traduzir seleção
 Selecione um texto no chat — aparece um **botão flutuante** com
@@ -368,16 +378,17 @@ Selecione um texto no chat — aparece um **botão flutuante** com
 seleção, com **copiar**. `ESC` ou clique fora fecha.
 
 ### Traduzir seleção (em qualquer site)
-Selecione o texto, escolha o idioma no seletor **"Seleção → PT-BR / EN"** e
-clique em **Traduzir seleção**. O resultado aparece no painel, com botões
-copiar e `.md`.
+Selecione o texto e use **Ações ⚡ → Traduzir seleção** com o idioma alvo
+(**→ PT-BR** ou **→ EN**) — ou escreva "traduza isso" / "traduza a seleção para
+inglês". O resultado aparece no painel, com botões copiar e `.md`.
 
 ### Live PT-BR
-1. Escolha a **fonte**: `Aba` (áudio da aba — ideal para lives/AMAs) ou `Mic`
-2. Escolha o idioma: `inglês → PT-BR` (traduz na hora) ou `português`
-3. Clique em **Live PT-BR**
-4. A transcrição vai aparecendo numa única bolha rolante com `[MM:SS]`
-5. Clique de novo (**Parar live**) → gera **resumo** e botão de **export .md**
+1. **Ações ⚡ → Live PT-BR** escolhendo a **fonte**: `aba` (áudio da aba —
+   ideal para lives/AMAs) ou `mic`; e o idioma: `inglês → PT` ou `português`
+   — ou escreva "live pelo microfone em português"
+2. A transcrição vai aparecendo numa única bolha rolante com `[MM:SS]`
+3. Toque em **Parar live** (ou escreva "parar live") → gera **resumo** e botão
+   de **export .md**
 
 > Dica: use a fonte **Aba** para capturar o áudio do vídeo/áudio da call; o
 > microfone perto da caixa de som capta eco e distorce. Se a aba pedir

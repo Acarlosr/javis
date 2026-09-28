@@ -98,9 +98,9 @@ body { display: flex; flex-direction: column; }
 .msg .acts button:hover { color: var(--text); border-color: var(--accent); }
 
 .actions {
+  position: relative;
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
   padding: 8px 12px;
   border-top: 1px solid #34353d;
 }
@@ -115,17 +115,58 @@ body { display: flex; flex-direction: column; }
 }
 .chip:hover { border-color: var(--accent); }
 .chip:disabled { opacity: 0.5; cursor: default; }
-select.chip {
+
+#actions-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 10px;
+  min-width: 300px;
+  max-width: 380px;
+  background: var(--panel);
+  border: 1px solid #43454f;
+  border-radius: 12px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 60;
+}
+#actions-menu button[data-action] {
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+#actions-menu button[data-action]:hover { background: rgba(255, 255, 255, 0.06); }
+.am-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.am-row button[data-action] { flex: 1; }
+.am-row select {
   appearance: none;
-  padding-right: 26px;
+  background: #2b2c33;
+  border: 1px solid #3c3d46;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 5px 22px 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%;
+  background-position: calc(100% - 13px) 55%, calc(100% - 8px) 55%;
   background-size: 5px 5px;
   background-repeat: no-repeat;
 }
-select.chip option { background: var(--panel); color: var(--text); }
+.am-row select option { background: var(--panel); color: var(--text); }
 
 .composer {
   display: flex;
