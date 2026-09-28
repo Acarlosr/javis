@@ -1,0 +1,16 @@
+{
+  "name": "javis",
+  "version": "0.3.0",
+  "description": "Javis — mordomo de IA local no navegador: resumos, YouTube, Discord, tradução por seleção, live com tradução simultânea e chat.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node daemon/start.mjs",
+    "test": "node --test tests/test.mjs",
+    "package": "bash scripts/package-extension.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Javis</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <img class="logo" src="../icons/icon-128.png" alt="" />
+        <span class="dot" id="status-dot"></span>
+        <strong>Javis</strong>
+        <select id="provider-select" class="model" title="Trocar provedor/modelo"></select>
+      </div>
+      <button id="btn-new" class="icon-btn" title="Nova seção (começar do zero)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button id="btn-history" class="icon-btn" title="Histórico de seções">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      </button>
+      <button id="btn-config" class="icon-btn" title="Configurações">⚙</button>
+    </header>
+
+    <div id="history-pop" class="hidden">
+      <div class="hp-head">
+        <strong>Histórico de seções</strong>
+        <select id="hp-retain" title="Por quanto tempo guardar as seções">
+          <option value="1">1 dia</option>
+          <option value="5">5 dias</option>
+          <option value="7">1 semana</option>
+          <option value="15">15 dias</option>
+          <option value="30">1 mês</option>
+        </select>
+      </div>
+      <div id="hp-list"></div>
+    </div>
+
+    <div id="setup" class="setup hidden">
+      <p id="setup-msg">Daemon não encontrado.</p>
+      <button id="btn-setup">Abrir configurações</button>
+    </div>
+
+    <main id="log" class="log">
+      <div class="welcome">
+        <h1>Javis</h1>
+        <p>Seu mordomo de IA no navegador — pergunte ou use uma ação rápida:</p>
+      </div>
+    </main>
+
+    <div class="actions">
+      <button class="chip" data-action="page">Resumir página</button>
+      <button class="chip" data-action="youtube">Resumir YouTube</button>
+      <select id="yt-style" class="chip select" title="Estilo do resumo do YouTube">
+        <option value="padrao">Resumo padrão</option>
+        <option value="topicos">Resumo por tópicos</option>
+        <option value="indice">Índice com tempos</option>
+      </select>
+      <button class="chip" data-action="youtube">YouTube</button>
+      <select id="discord-days" class="chip select" title="Período do resumo do Discord">
+        <option value="1">24 horas</option>
+        <option value="10">10 dias</option>
+        <option value="14" selected>14 dias</option>
+        <option value="20">20 dias</option>
+        <option value="30">30 dias</option>
+        <option value="90">90 dias</option>
+      </select>
+      <button class="chip" data-action="discord">Discord</button>
+      <select id="live-src" class="chip select" title="Fonte e idioma do áudio para o modo live">
+        <option value="tab:en">Aba · inglês → PT-BR</option>
+        <option value="tab:pt">Aba · português</option>
+        <option value="mic:en">Mic · inglês → PT-BR</option>
+        <option value="mic:pt">Mic · português</option>
+      </select>
+      <button class="chip" data-action="live" id="live-btn">Live PT-BR</button>
+      <select id="sel-lang" class="chip select" title="Idioma alvo da tradução da seleção">
+        <option value="pt" selected>Seleção → PT-BR</option>
+        <option value="en">Seleção → EN</option>
+      </select>
+      <button class="chip" data-action="seltrans" id="seltrans-btn">Traduzir seleção</button>
+      <button class="chip" data-action="translate">Página → PT-BR</button>
+    </div>
+
+    <div id="listening" class="listening hidden">
+      <div class="bars"><i></i><i></i><i></i><i></i><i></i></div>
+      <span id="listening-hint">Ouvindo… fale sua mensagem</span>
+    </div>
+
+    <footer class="composer">
+      <button id="mic" title="Falar (PT-BR)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+      <textarea id="input" rows="1" placeholder="Pergunte sobre esta página…"></textarea>
+      <button id="send" title="Enviar">↑</button>
+    </footer>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Javis — Configurações</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <h1>Javis</h1>
+
+    <section>
+      <h2>Ponte local (daemon)</h2>
+      <p class="hint">Rode <code>npm start</code> na pasta do projeto. O token está em <code>~/.config/assistente-navegador/bridge.json</code>.</p>
+      <label>Porta <input id="port" type="number" value="57931" /></label>
+      <label>Token <input id="token" type="password" placeholder="cole o token do bridge.json" /></label>
+      <button id="connect">Conectar</button>
+      <span id="test-result"></span>
+    </section>
+
+    <section>
+      <h2>Microfone</h2>
+      <p class="hint">O ditado usa o microfone dentro da extensão. Se o painel disser que o acesso foi negado, clique no botão abaixo para autorizar.</p>
+      <button id="mic-permission">Permitir microfone</button>
+      <span id="mic-result"></span>
+    </section>
+
+    <section id="providers-section">
+      <h2>Provedores de IA</h2>
+      <p class="hint">As chaves ficam salvas no daemon (<code>~/.config/assistente-navegador/config.json</code>, permissão 600) — não no Chrome.</p>
+      <label>Provedor ativo
+        <select id="active-provider"><option value="">—</option></select>
+      </label>
+      <div id="provider-list"></div>
+      <button id="add-provider">+ Adicionar provedor</button>
+    </section>
+
+    <section id="editor" class="hidden">
+      <h2 id="editor-title">Novo provedor</h2>
+      <p class="hint">Chave gravada aparece como <code>••••••</code> — não mexa para manter, ou digite uma nova para substituir.</p>
+      <label>Modelo pronto
+        <select id="preset">
+          <option value="">— escolha um pronto ou configure manual —</option>
+          <option value="gemini">Gemini (chave grátis do AI Studio)</option>
+          <option value="openai">OpenAI</option>
+          <option value="groq">Groq</option>
+          <option value="openrouter">OpenRouter</option>
+          <option value="ollama">Ollama (local)</option>
+          <option value="router9">9Router (local)</option>
+          <option value="custom">Endpoint OpenAI-compatível custom</option>
+          <option value="auth0">Endpoint atrás de Auth0 (client credentials)</option>
+        </select>
+      </label>
+      <label>Nome <input id="p-name" type="text" placeholder="Meu provedor" /></label>
+      <label>Base URL <input id="p-base" type="url" placeholder="https://.../v1" /></label>
+      <label>Modelo <input id="p-model" type="text" placeholder="gemini-2.5-flash" /></label>
+      <label id="p-key-label">Chave de API <input id="p-key" type="password" placeholder="sua chave" /></label>
+      <fieldset id="p-auth0" class="hidden">
+        <legend>Auth0 (client credentials)</legend>
+        <label>Domínio <input id="p-domain" type="text" placeholder="seu-tenant.auth0.com" /></label>
+        <label>Client ID <input id="p-client-id" type="text" /></label>
+        <label>Client Secret <input id="p-client-secret" type="password" /></label>
+        <label>Audience <input id="p-audience" type="text" placeholder="https://api.suaempresa" /></label>
+      </fieldset>
+      <button id="p-save" class="primary">Salvar provedor</button>
+      <button id="p-cancel">Cancelar</button>
+    </section>
+
+    <div id="migrate-note" class="note hidden"></div>
+    <span id="save-result"></span>
+
+    <script src="options.js"></script>
+  </body>
+</html>
