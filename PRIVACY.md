@@ -16,7 +16,9 @@ nenhum dado seu** — não há telemetria, analytics ou servidores nossos.
   apenas ao **daemon local** (`http://127.0.0.1`), nunca a terceiros.
 - **Áudio do microfone/aba (ditado e Live)** — é transcrito com **Whisper
   local** (`whisper-cli`) na sua máquina. O áudio **nunca sai** do seu
-  computador.
+  computador. Se você pedir tradução da transcrição (ex.: Live em inglês →
+  PT-BR), o **texto transcrito** é enviado ao provedor configurado para
+  tradução — o áudio continua local.
 - **Chaves de API de provedores de IA** — ficam no daemon local
   (`~/.config/assistente-navegador/`, permissão 600) ou no armazenamento local
   do navegador. Nada é enviado para nós.

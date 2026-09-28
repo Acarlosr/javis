@@ -52,6 +52,46 @@ describe("daemon server", () => {
     assert.equal(res.status, 404);
   });
 
+  it("recusa host estranho (anti DNS-rebinding)", async () => {
+    const status = await new Promise((resolve, reject) => {
+      const r = http.request(
+        {
+          host: "127.0.0.1",
+          port,
+          path: "/health",
+          headers: { host: "evil.example.com", authorization: `Bearer ${config.token}` },
+        },
+        (resp) => {
+          resp.resume();
+          resp.on("end", () => resolve(resp.statusCode));
+        }
+      );
+      r.on("error", reject);
+      r.end();
+    });
+    assert.equal(status, 403);
+  });
+
+  it("aceita host 127.0.0.1 com porta", async () => {
+    const status = await new Promise((resolve, reject) => {
+      const r = http.request(
+        {
+          host: "127.0.0.1",
+          port,
+          path: "/health",
+          headers: { host: `127.0.0.1:${port}`, authorization: `Bearer ${config.token}` },
+        },
+        (resp) => {
+          resp.resume();
+          resp.on("end", () => resolve(resp.statusCode));
+        }
+      );
+      r.on("error", reject);
+      r.end();
+    });
+    assert.equal(status, 200);
+  });
+
   it("chat JSON em modo teste (sem provedores)", async () => {
     const res = await fetch(base() + "/chat", {
       method: "POST",

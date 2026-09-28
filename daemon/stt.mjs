@@ -4,8 +4,27 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 
-const WHISPER_BIN = process.env.AN_WHISPER_BIN || "/usr/local/bin/whisper-cli";
-const FFMPEG_BIN = process.env.AN_FFMPEG_BIN || "/usr/local/bin/ffmpeg";
+function findBin(name, envName) {
+  const fromEnv = process.env[envName];
+  if (fromEnv) return fromEnv;
+  const dirs = [...new Set([
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    join(homedir(), ".local/bin"),
+    "/usr/bin",
+    "/opt/local/bin",
+    ...(process.env.PATH ? process.env.PATH.split(":") : []),
+  ])];
+  for (const dir of dirs) {
+    if (!dir) continue;
+    const candidate = join(dir, name);
+    if (existsSync(candidate)) return candidate;
+  }
+  return "/usr/local/bin/" + name;
+}
+
+const WHISPER_BIN = findBin("whisper-cli", "AN_WHISPER_BIN");
+const FFMPEG_BIN = findBin("ffmpeg", "AN_FFMPEG_BIN");
 export const MODEL_PATH =
   process.env.AN_WHISPER_MODEL || join(homedir(), ".config", "assistente-navegador", "models", "ggml-base.bin");
 

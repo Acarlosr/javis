@@ -47,6 +47,11 @@ export function createApp({ config, logger = () => {} } = {}) {
       res.writeHead(204).end();
       return;
     }
+    const host = String(req.headers.host || "").toLowerCase();
+    if (!/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host)) {
+      sendJson(res, 403, { ok: false, error: "host não permitido (use 127.0.0.1)" });
+      return;
+    }
     const auth = req.headers.authorization || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!isTokenValid(token, config.token)) {
@@ -59,7 +64,7 @@ export function createApp({ config, logger = () => {} } = {}) {
       sendJson(res, 200, {
         ok: true,
         name: "assistente-navegador",
-        version: "0.5.2",
+        version: "0.6.0",
         provider: active ? active.name : null,
         model: active ? active.model : null,
         hasKey: active ? Boolean(active.apiKey) || active.type === "auth0" : false,

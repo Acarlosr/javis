@@ -85,6 +85,15 @@ body { display: flex; flex-direction: column; }
 .msg.ai { align-self: flex-start; background: var(--bubble-ai); border-bottom-left-radius: 4px; }
 .msg.err { align-self: stretch; background: #3a2f2f; border: 1px solid #6b4444; color: #f0c8c8; font-size: 13px; }
 .msg .ctx { color: var(--muted); font-size: 11px; margin-bottom: 6px; }
+.demo-chip {
+  font-size: 12px;
+  color: #e8c26a;
+  background: rgba(232, 194, 106, 0.1);
+  border: 1px solid rgba(232, 194, 106, 0.35);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-top: 6px;
+}
 .msg .acts { display: flex; gap: 6px; margin-top: 7px; }
 .msg .acts button {
   background: transparent;

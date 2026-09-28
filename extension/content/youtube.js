@@ -105,6 +105,8 @@ globalThis.__anYoutube = async (maxChars = 60000) => {
     return {
       transcript: text.slice(0, maxChars),
       truncated: text.length > maxChars,
+      totalChars: text.length,
+      limit: maxChars,
       title: document.title,
       lang: track.languageCode,
       hasCaptions: true,
