@@ -477,10 +477,11 @@ Há dois caminhos — escolha pelo público:
 A extensão fica "não publicada" (developer mode) — perfeita para quem você
 puder orientar pessoalmente:
 
-1. Na página do repo: **Code → Download ZIP** (ou compartilhe o link)
+1. Vá em **Releases**: <https://github.com/Acarlosr/javis/releases> e baixe o
+   `javis-extension-<versão>.zip` (o arquivo da versão mais recente)
 2. Descompacte o ZIP
 3. `chrome://extensions` → **Modo do desenvolvedor** → **Carregar sem
-   compactação** → selecione a pasta `extension/` descompactada
+   compactação** → selecione a pasta descompactada
 4. Instale o daemon (`npm start`) e cole o token no painel
 5. Pronto — o Chrome lembra da extensão; ela só atualiza manualmente
    (botão de recarregar)
