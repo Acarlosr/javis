@@ -19,6 +19,7 @@ let editingId = null;
 let creds = null;
 let modelsByProvider = new Map();
 let refreshingModels = false;
+let editorModels = null;
 
 function baseUrl() {
   return `http://127.0.0.1:${creds.port}`;
@@ -121,22 +122,84 @@ async function updateProviderModel(id, model) {
   await putConfig();
 }
 
-function buildModelChips(container, models, current, onPick) {
-  container.innerHTML = "";
-  if (!models || !models.length) {
-    container.classList.add("hidden");
+let menuEl = null;
+let menuAnchor = null;
+
+function closeModelMenu() {
+  if (!menuEl) return;
+  menuEl.remove();
+  menuEl = null;
+  menuAnchor = null;
+  document.removeEventListener("mousedown", onMenuOutside, true);
+  document.removeEventListener("keydown", onMenuKey, true);
+}
+
+function onMenuOutside(e) {
+  if (menuEl && !menuEl.contains(e.target) && !menuAnchor.contains(e.target)) closeModelMenu();
+}
+
+function onMenuKey(e) {
+  if (e.key === "Escape") closeModelMenu();
+}
+
+function openModelMenu(anchor, models, current, onPick, menuKey) {
+  if (menuEl && menuEl.dataset.for === menuKey) {
+    closeModelMenu();
     return;
   }
-  container.classList.remove("hidden");
-  for (const m of models) {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "model-chip" + (m.id === current ? " sel" : "");
-    chip.textContent = m.id;
-    chip.title = m.owned_by ? m.id + " · " + m.owned_by : m.id;
-    chip.onclick = () => onPick(m.id);
-    container.append(chip);
-  }
+  closeModelMenu();
+  if (!models || !models.length) return;
+  menuAnchor = anchor;
+  const menu = document.createElement("div");
+  menu.className = "model-menu";
+  menu.dataset.for = menuKey || "";
+  const search = document.createElement("input");
+  search.type = "text";
+  search.className = "model-menu-search";
+  search.placeholder = "filtrar modelos…";
+  const list = document.createElement("div");
+  list.className = "model-menu-list";
+  const paint = () => {
+    const q = search.value.trim().toLowerCase();
+    list.innerHTML = "";
+    const filtered = q ? models.filter((m) => m.id.toLowerCase().includes(q)) : models;
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "model-menu-empty";
+      empty.textContent = "nenhum modelo com esse filtro";
+      list.append(empty);
+      return;
+    }
+    for (const m of filtered) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "model-menu-item" + (m.id === current ? " sel" : "");
+      item.textContent = m.id;
+      item.title = m.owned_by ? m.id + " · " + m.owned_by : m.id;
+      item.onclick = () => {
+        closeModelMenu();
+        onPick(m.id);
+      };
+      list.append(item);
+    }
+  };
+  search.addEventListener("input", paint);
+  paint();
+  menu.append(search, list);
+  const rect = anchor.getBoundingClientRect();
+  const MARGIN = 8;
+  menu.style.visibility = "hidden";
+  document.body.append(menu);
+  const mh = menu.offsetHeight;
+  let top = rect.bottom + 6;
+  if (top + mh > window.innerHeight - MARGIN) top = Math.max(MARGIN, rect.top - mh - 6);
+  menu.style.top = top + "px";
+  menu.style.left = Math.max(MARGIN, Math.min(rect.left, window.innerWidth - menu.offsetWidth - MARGIN)) + "px";
+  menu.style.visibility = "visible";
+  search.focus();
+  menuEl = menu;
+  document.addEventListener("mousedown", onMenuOutside, true);
+  document.addEventListener("keydown", onMenuKey, true);
 }
 
 function renderProviders() {
@@ -160,6 +223,21 @@ function renderProviders() {
     meta.className = "meta";
     meta.textContent = `${p.type === "auth0" ? "Auth0" : "API"} · ${p.model || "sem modelo"}${p.hasKey || p.type === "auth0" ? "" : " · sem chave (modo teste)"}`;
     info.append(name, meta);
+    const models = modelsByProvider.get(p.id);
+    if (models && models.length) {
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "model-pick";
+      const label = document.createElement("span");
+      label.textContent = p.model || "escolher modelo";
+      const chev = document.createElement("span");
+      chev.className = "chev";
+      chev.textContent = "▾";
+      pick.append(label, chev);
+      pick.title = "Escolher modelo (" + models.length + ")";
+      pick.onclick = () => openModelMenu(pick, models, p.model, (id) => updateProviderModel(p.id, id), "card:" + p.id);
+      info.append(pick);
+    }
     const badge = document.createElement("span");
     badge.className = "badge";
     badge.textContent = p.id === activeProvider ? "ativo" : "";
@@ -191,13 +269,6 @@ function renderProviders() {
     del.onclick = () => removeProvider(p.id);
     btns.append(use, edit, test, del);
     card.append(info, badge, btns);
-    const models = modelsByProvider.get(p.id);
-    if (models && models.length) {
-      const wrap = document.createElement("div");
-      wrap.className = "models";
-      buildModelChips(wrap, models, p.model, (modelId) => updateProviderModel(p.id, modelId));
-      card.append(wrap);
-    }
     list.append(card);
   }
   if (activeProvider) sel.value = activeProvider;
@@ -245,8 +316,7 @@ function openEditor(p) {
   const isAuth0 = p?.type === "auth0";
   $("p-auth0").classList.toggle("hidden", !isAuth0);
   $("p-key-label").classList.toggle("hidden", isAuth0);
-  $("p-models").innerHTML = "";
-  $("p-models").classList.add("hidden");
+  editorModels = null;
   $("p-models-status").textContent = "";
   $("editor").classList.remove("hidden");
   $("editor").scrollIntoView({ behavior: "smooth" });
@@ -258,38 +328,38 @@ function closeEditor() {
   editingId = null;
 }
 
-async function fetchEditorModels() {
+async function fetchEditorModels({ openMenu = false } = {}) {
   const status = $("p-models-status");
-  status.textContent = "Buscando modelos…";
-  status.className = "hint";
   const key = $("p-key").value.trim();
   const useSaved = Boolean(editingId) && key === MASK;
+  if (editorModels) {
+    status.textContent = `${editorModels.length} modelos — clique em Buscar modelos para escolher`;
+    if (openMenu) openModelMenu($("p-fetch-models"), editorModels, $("p-model").value.trim(), (id) => ($("p-model").value = id), "editor");
+    return;
+  }
+  status.textContent = "Buscando modelos…";
+  status.className = "hint";
   const r = useSaved
     ? await daemonFetch("/models?provider=" + encodeURIComponent(editingId))
     : await daemonFetch("/models", "POST", { baseUrl: $("p-base").value.trim(), apiKey: key });
   if (r.ok && r.data.ok) {
-    const models = r.data.models || [];
-    status.textContent = `${models.length} modelos — clique para escolher`;
-    const paint = (current) => buildModelChips($("p-models"), models, current, (id) => {
-      $("p-model").value = id;
-      paint(id);
-    });
-    paint($("p-model").value.trim());
+    editorModels = r.data.models || [];
+    status.textContent = `${editorModels.length} modelos disponíveis`;
+    if (openMenu) openModelMenu($("p-fetch-models"), editorModels, $("p-model").value.trim(), (id) => ($("p-model").value = id), "editor");
   } else {
     status.textContent = "Falhou: " + (r.data.error || "HTTP " + r.status);
     status.className = "bad";
   }
 }
 
-$("p-fetch-models").addEventListener("click", fetchEditorModels);
+$("p-fetch-models").addEventListener("click", () => fetchEditorModels({ openMenu: true }));
 
 $("preset").addEventListener("change", () => {
   const v = $("preset").value;
   const isAuth0 = v === "auth0";
   $("p-auth0").classList.toggle("hidden", !isAuth0);
   $("p-key-label").classList.toggle("hidden", isAuth0);
-  $("p-models").innerHTML = "";
-  $("p-models").classList.add("hidden");
+  editorModels = null;
   $("p-models-status").textContent = "";
   if (PRESETS[v]) {
     $("p-name").value = PRESETS[v].name;

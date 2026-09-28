@@ -203,13 +203,15 @@ Vem com presets prontos:
 ### Descoberta de modelos
 
 Para provedores OpenAI-compatíveis, o Javis consulta o endpoint `/v1/models` do
-provedor e mostra os modelos disponíveis como **chips clicáveis**:
+provedor e deixa você escolher o modelo numa **janela flutuante**:
 
-- Ao **conectar** (ou abrir as configurações com o daemon no ar), cada card de
-  provedor lista os modelos que ele serve — um clique troca o modelo ativo.
-- No **editor de provedor**, o botão **Buscar modelos** consulta na hora
-  (com a chave colada ou, se já salva, usando a chave gravada). Presets locais
-  sem chave (Ollama, 9Router) buscam automaticamente ao escolher o preset.
+- Cada card de provedor mostra o **modelo atual como um botão** — um clique abre
+  a lista de modelos disponíveis (com filtro de busca), clicar num modelo troca
+  e fecha a janela; clicar fora também fecha. Um novo clique no botão abre de novo.
+- No **editor de provedor**, o botão **Buscar modelos** consulta na hora (com a
+  chave colada ou, se já salva, usando a chave gravada) e abre a mesma janela.
+  Presets locais sem chave (Ollama, 9Router) buscam automaticamente ao escolher
+  o preset.
 
 Não apareceu nada? Veja *Troubleshooting* — alguns provedores exigem chave
 válida para listar modelos; o 9Router/Ollama respondem sem chave.

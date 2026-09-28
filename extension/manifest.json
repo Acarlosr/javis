@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Javis",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Javis, seu mordomo de IA local: resumos, YouTube, Discord, tradução por seleção, live com tradução simultânea e chat.",
   "minimum_chrome_version": "116",
   "permissions": ["sidePanel", "storage", "unlimitedStorage", "activeTab", "scripting", "tabCapture"],
