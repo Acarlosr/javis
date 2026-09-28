@@ -195,8 +195,24 @@ Vem com presets prontos:
 | **OpenAI** | `https://api.openai.com/v1` | `gpt-4o-mini` | <https://platform.openai.com/api-keys> |
 | **Groq** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | <https://console.groq.com/keys> (camada grátis) |
 | **OpenRouter** | `https://openrouter.ai/api/v1` | `meta-llama/llama-3.3-70b-instruct:free` | <https://openrouter.ai/keys> (tem modelos :free) |
+| **Nous Research** | `https://inference-api.nousresearch.com/v1` | `Hermes-4-405B` | <https://build.nousresearch.com> |
+| **DeepSeek** | `https://api.deepseek.com/v1` | `deepseek-chat` | <https://platform.deepseek.com> |
 | **Ollama (local)** | `http://127.0.0.1:11434/v1` | `llama3.1` | nenhum — roda na sua máquina |
 | **9Router (local)** | `http://127.0.0.1:20128/v1` | (o que seu router servir) | nenhum — roteador local próprio |
+
+### Descoberta de modelos
+
+Para provedores OpenAI-compatíveis, o Javis consulta o endpoint `/v1/models` do
+provedor e mostra os modelos disponíveis como **chips clicáveis**:
+
+- Ao **conectar** (ou abrir as configurações com o daemon no ar), cada card de
+  provedor lista os modelos que ele serve — um clique troca o modelo ativo.
+- No **editor de provedor**, o botão **Buscar modelos** consulta na hora
+  (com a chave colada ou, se já salva, usando a chave gravada). Presets locais
+  sem chave (Ollama, 9Router) buscam automaticamente ao escolher o preset.
+
+Não apareceu nada? Veja *Troubleshooting* — alguns provedores exigem chave
+válida para listar modelos; o 9Router/Ollama respondem sem chave.
 
 ### Pelo painel (recomendado)
 

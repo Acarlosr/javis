@@ -26,6 +26,38 @@ export function mockChat(messages) {
   };
 }
 
+export async function fetchOpenAiModels(baseUrl, apiKey, { timeoutMs = 10000, fetchImpl = fetch } = {}) {
+  const url = String(baseUrl || "").replace(/\/+$/, "") + "/models";
+  if (!/^https?:\/\//.test(url)) throw new Error("Base URL inválida: " + url);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const headers = {};
+    if (apiKey && !/^•+$/.test(apiKey)) headers.authorization = `Bearer ${apiKey}`;
+    const res = await fetchImpl(url, { headers, signal: ctrl.signal });
+    if (!res.ok) {
+      let detail = "HTTP " + res.status;
+      try {
+        const j = await res.json();
+        detail = (j.error && (j.error.message || j.error)) || detail;
+      } catch {}
+      throw new Error(detail);
+    }
+    const data = await res.json();
+    const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return list
+      .map((m) =>
+        typeof m === "string"
+          ? { id: m }
+          : { id: String(m.id ?? m.name ?? ""), owned_by: String(m.owned_by || "") }
+      )
+      .filter((m) => m.id)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const auth0Cache = new Map();
 
 export function auth0Base(domain) {

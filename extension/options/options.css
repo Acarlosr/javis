@@ -56,6 +56,7 @@ button:hover { filter: brightness(0.97); }
   padding: 10px 12px;
   margin: 8px 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
@@ -72,6 +73,39 @@ button:hover { filter: brightness(0.97); }
 .provider-card.active { border-color: #4c5bd4; box-shadow: 0 0 0 2px rgba(76, 91, 212, 0.15); }
 .provider-card .btns { display: flex; gap: 6px; }
 .provider-card button { padding: 5px 9px; font-size: 12px; }
+.models {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 2px 0 4px;
+  border-top: 1px dashed #e2e2e8;
+}
+.model-chip {
+  padding: 3px 9px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid #d5d5e0;
+  background: #fafaff;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.model-chip.sel {
+  background: #4c5bd4;
+  border-color: #4c5bd4;
+  color: #fff;
+  font-weight: 600;
+}
+.model-discovery { margin: 10px 0; }
+.model-discovery #p-models-status { margin-left: 10px; font-size: 12px; }
+.model-discovery .models {
+  margin-top: 8px;
+  border-top: none;
+}
 .note {
   margin-top: 16px;
   padding: 10px 12px;

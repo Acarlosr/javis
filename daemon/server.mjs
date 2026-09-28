@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { MASK, isTokenValid, normalizeProvider, saveConfig } from "./config.mjs";
-import { callProvider, validateMessages, MAX_BODY_BYTES } from "./provider.mjs";
+import { callProvider, validateMessages, MAX_BODY_BYTES, fetchOpenAiModels } from "./provider.mjs";
 import { sttAvailable, transcribeAudio } from "./stt.mjs";
 
 function sanitizeProvider(p) {
@@ -59,7 +59,7 @@ export function createApp({ config, logger = () => {} } = {}) {
       sendJson(res, 200, {
         ok: true,
         name: "assistente-navegador",
-        version: "0.3.0",
+        version: "0.4.0",
         provider: active ? active.name : null,
         model: active ? active.model : null,
         hasKey: active ? Boolean(active.apiKey) || active.type === "auth0" : false,
@@ -74,6 +74,53 @@ export function createApp({ config, logger = () => {} } = {}) {
         activeProvider: config.activeProvider,
         providers: config.providers.map(sanitizeProvider),
       });
+      return;
+    }
+
+    if (req.method === "GET" && req.url.startsWith("/models")) {
+      const params = new URL(req.url, "http://127.0.0.1").searchParams;
+      const id = params.get("provider");
+      const prof = id
+        ? config.providers.find((p) => p.id === id)
+        : config.providers.find((p) => p.id === config.activeProvider);
+      if (!prof) {
+        sendJson(res, id ? 404 : 200, {
+          ok: false,
+          error: id ? "provedor não encontrado: " + id : "nenhum provedor ativo",
+        });
+        return;
+      }
+      if (prof.type !== "openai" || !prof.baseUrl) {
+        sendJson(res, 400, { ok: false, error: "descoberta de modelos só para endpoints OpenAI-compatíveis" });
+        return;
+      }
+      try {
+        const models = await fetchOpenAiModels(prof.baseUrl, prof.apiKey);
+        logger(`modelos de ${prof.name}: ${models.length}`);
+        sendJson(res, 200, { ok: true, provider: prof.id, count: models.length, models });
+      } catch (e) {
+        sendJson(res, 200, { ok: false, provider: prof.id, error: String(e.message || e) });
+      }
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/models") {
+      let body;
+      try {
+        body = JSON.parse(await readBody(req));
+      } catch {
+        body = {};
+      }
+      if (!body.baseUrl || typeof body.baseUrl !== "string") {
+        sendJson(res, 400, { ok: false, error: "baseUrl obrigatória" });
+        return;
+      }
+      try {
+        const models = await fetchOpenAiModels(body.baseUrl, body.apiKey || "");
+        sendJson(res, 200, { ok: true, count: models.length, models });
+      } catch (e) {
+        sendJson(res, 200, { ok: false, error: String(e.message || e) });
+      }
       return;
     }
 

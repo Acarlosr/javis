@@ -3,8 +3,8 @@ process.env.ASSISTENTE_DATA = "/tmp/an-unit-" + Date.now();
 const { after, before, describe, it } = await import("node:test");
 const assert = (await import("node:assert/strict")).default;
 const { createApp } = await import("../daemon/server.mjs");
-const { newToken, MASK } = await import("../daemon/config.mjs");
-const { validateMessages, mockChat, callProvider, clearAuth0Cache } = await import("../daemon/provider.mjs");
+const { newToken, MASK, PRESETS } = await import("../daemon/config.mjs");
+const { validateMessages, mockChat, callProvider, clearAuth0Cache, fetchOpenAiModels } = await import("../daemon/provider.mjs");
 const http = (await import("node:http")).default;
 
 function listen(server) {
@@ -341,5 +341,111 @@ describe("provider", () => {
     ]);
     assert.equal(r.ok, true);
     assert.ok(r.text.includes("2"));
+  });
+
+  it("presets nous e deepseek presentes", () => {
+    assert.equal(PRESETS.nous.baseUrl, "https://inference-api.nousresearch.com/v1");
+    assert.equal(PRESETS.nous.model, "Hermes-4-405B");
+    assert.equal(PRESETS.deepseek.baseUrl, "https://api.deepseek.com/v1");
+    assert.equal(PRESETS.deepseek.model, "deepseek-chat");
+  });
+});
+
+describe("descoberta de modelos", () => {
+  let hits = 0;
+  let seenAuth = "";
+  const upstream = http.createServer((req, res) => {
+    if (req.url === "/v1/models") {
+      hits++;
+      seenAuth = req.headers.authorization || "";
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ data: [{ id: "beta" }, { id: "alpha" }, { id: "gamma", owned_by: "org" }] }));
+      return;
+    }
+    res.writeHead(404).end();
+  });
+  let uport;
+  const config = {
+    token: newToken(),
+    activeProvider: null,
+    providers: [],
+  };
+  const app = createApp({ config });
+  let port;
+  before(async () => {
+    uport = await listen(upstream);
+    port = await listen(app);
+  });
+  after(() => {
+    app.close();
+    upstream.close();
+  });
+
+  const base = () => `http://127.0.0.1:${port}`;
+  const auth = { authorization: `Bearer ${config.token}` };
+
+  it("fetchOpenAiModels ordena e normaliza", async () => {
+    const models = await fetchOpenAiModels(`http://127.0.0.1:${uport}/v1`, "k1");
+    assert.deepEqual(models.map((m) => m.id), ["alpha", "beta", "gamma"]);
+    assert.equal(models[2].owned_by, "org");
+    assert.equal(hits, 1);
+  });
+
+  it("GET /models?provider= consulta upstream com a chave salva", async () => {
+    await fetch(base() + "/config", {
+      method: "PUT",
+      headers: { ...auth, "content-type": "application/json" },
+      body: JSON.stringify({
+        providers: [{ id: "rt9", name: "9Router", type: "openai", baseUrl: `http://127.0.0.1:${uport}/v1`, model: "ag/x", apiKey: "k1" }],
+        activeProvider: "rt9",
+      }),
+    });
+    const res = await fetch(base() + "/models?provider=rt9", { headers: auth });
+    const data = await res.json();
+    assert.equal(data.ok, true);
+    assert.equal(data.provider, "rt9");
+    assert.equal(data.count, 3);
+    assert.equal(seenAuth, "Bearer k1");
+    assert.equal(data.models[0].id, "alpha");
+  });
+
+  it("GET /models sem provider usa o ativo; desconhecido → 404", async () => {
+    const r1 = await fetch(base() + "/models", { headers: auth });
+    const d1 = await r1.json();
+    assert.equal(d1.ok, true);
+    assert.equal(d1.provider, "rt9");
+
+    const r2 = await fetch(base() + "/models?provider=zz", { headers: auth });
+    assert.equal(r2.status, 404);
+  });
+
+  it("POST /models ad-hoc com baseUrl e apiKey", async () => {
+    const res = await fetch(base() + "/models", {
+      method: "POST",
+      headers: { ...auth, "content-type": "application/json" },
+      body: JSON.stringify({ baseUrl: `http://127.0.0.1:${uport}/v1`, apiKey: "k2" }),
+    });
+    const data = await res.json();
+    assert.equal(data.ok, true);
+    assert.equal(data.count, 3);
+    assert.equal(seenAuth, "Bearer k2");
+  });
+
+  it("POST /models sem baseUrl → 400", async () => {
+    const res = await fetch(base() + "/models", {
+      method: "POST",
+      headers: { ...auth, "content-type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(res.status, 400);
+  });
+
+  it("GET /models de upstream fora do ar → ok:false", async () => {
+    await new Promise((resolve) => upstream.close(resolve));
+    const res = await fetch(base() + "/models?provider=rt9", { headers: auth });
+    const data = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(data.ok, false);
+    assert.ok(data.error);
   });
 });

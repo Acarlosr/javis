@@ -44,6 +44,8 @@
           <option value="openai">OpenAI</option>
           <option value="groq">Groq</option>
           <option value="openrouter">OpenRouter</option>
+          <option value="nous">Nous Research (Hermes)</option>
+          <option value="deepseek">DeepSeek</option>
           <option value="ollama">Ollama (local)</option>
           <option value="router9">9Router (local)</option>
           <option value="custom">Endpoint OpenAI-compatível custom</option>
@@ -53,6 +55,11 @@
       <label>Nome <input id="p-name" type="text" placeholder="Meu provedor" /></label>
       <label>Base URL <input id="p-base" type="url" placeholder="https://.../v1" /></label>
       <label>Modelo <input id="p-model" type="text" placeholder="gemini-2.5-flash" /></label>
+      <div class="model-discovery">
+        <button id="p-fetch-models">Buscar modelos</button>
+        <span id="p-models-status" class="hint"></span>
+        <div id="p-models" class="models"></div>
+      </div>
       <label id="p-key-label">Chave de API <input id="p-key" type="password" placeholder="sua chave" /></label>
       <fieldset id="p-auth0" class="hidden">
         <legend>Auth0 (client credentials)</legend>

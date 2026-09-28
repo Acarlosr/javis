@@ -6,14 +6,19 @@ const PRESETS = {
   openai: { name: "OpenAI", type: "openai", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
   groq: { name: "Groq", type: "openai", baseUrl: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" },
   openrouter: { name: "OpenRouter", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct:free" },
+  nous: { name: "Nous Research", type: "openai", baseUrl: "https://inference-api.nousresearch.com/v1", model: "Hermes-4-405B" },
+  deepseek: { name: "DeepSeek", type: "openai", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
   ollama: { name: "Ollama (local)", type: "openai", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1" },
   router9: { name: "9Router (local)", type: "openai", baseUrl: "http://127.0.0.1:20128/v1", model: "ag/gemini-3.8-flash-low" },
 };
+const KEYLESS_PRESETS = new Set(["ollama", "router9"]);
 
 let providers = [];
 let activeProvider = null;
 let editingId = null;
 let creds = null;
+let modelsByProvider = new Map();
+let refreshingModels = false;
 
 function baseUrl() {
   return `http://127.0.0.1:${creds.port}`;
@@ -83,6 +88,55 @@ async function loadProviders() {
   providers = r.data.providers || [];
   activeProvider = r.data.activeProvider;
   renderProviders();
+  refreshModelChips();
+}
+
+function isLocalUrl(url) {
+  return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?/.test(url || "");
+}
+
+async function refreshModelChips() {
+  if (refreshingModels) return;
+  refreshingModels = true;
+  try {
+    const targets = providers.filter(
+      (p) => p.type === "openai" && p.baseUrl && (p.hasKey || isLocalUrl(p.baseUrl))
+    );
+    await Promise.allSettled(
+      targets.map(async (p) => {
+        const r = await daemonFetch("/models?provider=" + encodeURIComponent(p.id));
+        modelsByProvider.set(p.id, r.ok && r.data.ok ? r.data.models || [] : null);
+      })
+    );
+    renderProviders();
+  } finally {
+    refreshingModels = false;
+  }
+}
+
+async function updateProviderModel(id, model) {
+  const p = providers.find((x) => x.id === id);
+  if (!p) return;
+  p.model = model;
+  await putConfig();
+}
+
+function buildModelChips(container, models, current, onPick) {
+  container.innerHTML = "";
+  if (!models || !models.length) {
+    container.classList.add("hidden");
+    return;
+  }
+  container.classList.remove("hidden");
+  for (const m of models) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "model-chip" + (m.id === current ? " sel" : "");
+    chip.textContent = m.id;
+    chip.title = m.owned_by ? m.id + " · " + m.owned_by : m.id;
+    chip.onclick = () => onPick(m.id);
+    container.append(chip);
+  }
 }
 
 function renderProviders() {
@@ -137,6 +191,13 @@ function renderProviders() {
     del.onclick = () => removeProvider(p.id);
     btns.append(use, edit, test, del);
     card.append(info, badge, btns);
+    const models = modelsByProvider.get(p.id);
+    if (models && models.length) {
+      const wrap = document.createElement("div");
+      wrap.className = "models";
+      buildModelChips(wrap, models, p.model, (modelId) => updateProviderModel(p.id, modelId));
+      card.append(wrap);
+    }
     list.append(card);
   }
   if (activeProvider) sel.value = activeProvider;
@@ -184,8 +245,12 @@ function openEditor(p) {
   const isAuth0 = p?.type === "auth0";
   $("p-auth0").classList.toggle("hidden", !isAuth0);
   $("p-key-label").classList.toggle("hidden", isAuth0);
+  $("p-models").innerHTML = "";
+  $("p-models").classList.add("hidden");
+  $("p-models-status").textContent = "";
   $("editor").classList.remove("hidden");
   $("editor").scrollIntoView({ behavior: "smooth" });
+  if (!isAuth0 && p?.id && p?.type === "openai" && p?.baseUrl) fetchEditorModels();
 }
 
 function closeEditor() {
@@ -193,15 +258,44 @@ function closeEditor() {
   editingId = null;
 }
 
+async function fetchEditorModels() {
+  const status = $("p-models-status");
+  status.textContent = "Buscando modelos…";
+  status.className = "hint";
+  const key = $("p-key").value.trim();
+  const useSaved = Boolean(editingId) && key === MASK;
+  const r = useSaved
+    ? await daemonFetch("/models?provider=" + encodeURIComponent(editingId))
+    : await daemonFetch("/models", "POST", { baseUrl: $("p-base").value.trim(), apiKey: key });
+  if (r.ok && r.data.ok) {
+    const models = r.data.models || [];
+    status.textContent = `${models.length} modelos — clique para escolher`;
+    const paint = (current) => buildModelChips($("p-models"), models, current, (id) => {
+      $("p-model").value = id;
+      paint(id);
+    });
+    paint($("p-model").value.trim());
+  } else {
+    status.textContent = "Falhou: " + (r.data.error || "HTTP " + r.status);
+    status.className = "bad";
+  }
+}
+
+$("p-fetch-models").addEventListener("click", fetchEditorModels);
+
 $("preset").addEventListener("change", () => {
   const v = $("preset").value;
   const isAuth0 = v === "auth0";
   $("p-auth0").classList.toggle("hidden", !isAuth0);
   $("p-key-label").classList.toggle("hidden", isAuth0);
+  $("p-models").innerHTML = "";
+  $("p-models").classList.add("hidden");
+  $("p-models-status").textContent = "";
   if (PRESETS[v]) {
     $("p-name").value = PRESETS[v].name;
     $("p-base").value = PRESETS[v].baseUrl;
     $("p-model").value = PRESETS[v].model;
+    if (KEYLESS_PRESETS.has(v)) fetchEditorModels();
   }
 });
 

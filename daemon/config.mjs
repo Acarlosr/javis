@@ -21,6 +21,8 @@ export const PRESETS = {
   openai: { name: "OpenAI", type: "openai", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
   groq: { name: "Groq", type: "openai", baseUrl: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" },
   openrouter: { name: "OpenRouter", type: "openai", baseUrl: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct:free" },
+  nous: { name: "Nous Research", type: "openai", baseUrl: "https://inference-api.nousresearch.com/v1", model: "Hermes-4-405B" },
+  deepseek: { name: "DeepSeek", type: "openai", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
   ollama: { name: "Ollama (local)", type: "openai", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1" },
   router9: { name: "9Router (local)", type: "openai", baseUrl: "http://127.0.0.1:20128/v1", model: "ag/gemini-3.8-flash-low" },
 };
