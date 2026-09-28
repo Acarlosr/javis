@@ -1071,6 +1071,7 @@ document.addEventListener("keydown", (e) => {
 document.querySelectorAll("#actions-menu [data-action]").forEach((chip) => {
   chip.addEventListener("click", () => {
     const action = chip.dataset.action;
+    actionsMenu.classList.add("hidden");
     if (action === "page") runPageSummary();
     else if (action === "youtube") runYoutube($("yt-style").value || "padrao");
     else if (action === "live") {

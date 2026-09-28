@@ -132,6 +132,7 @@ body { display: flex; flex-direction: column; }
   gap: 2px;
   z-index: 60;
 }
+#actions-menu.hidden { display: none; }
 #actions-menu button[data-action] {
   text-align: left;
   background: none;
