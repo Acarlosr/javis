@@ -8,6 +8,7 @@ chrome.runtime.onStartup.addListener(ensurePanelBehavior);
 ensurePanelBehavior();
 
 let lastGoodTabId = null;
+let liveVideoTabId = null;
 
 function isRestricted(url) {
   return !url || /^(chrome|edge|about|devtools|chrome-extension|https:\/\/chrome\.google)/.test(url);
@@ -34,6 +35,8 @@ const INJECTORS = {
   "content/extract.js": "__anExtract",
   "content/youtube.js": "__anYoutube",
   "content/discord.js": "__anDiscord",
+  "content/video.js": "__anVideo",
+  "content/live-video.js": "__anLiveVideo",
 };
 
 const TR_INJECTED = new Set();
@@ -167,6 +170,57 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         }
         const data = await runInTab(tab.id, "content/discord.js", [msg.days || 14]);
         sendResponse(data ? { ok: true, ...data } : { ok: false, error: "falha na coleta" });
+        return;
+      }
+      if (msg?.type === "getVideoContext") {
+        const data = await runInTab(tab.id, "content/video.js", [msg.maxChars || 120000]);
+        if (!data) {
+          sendResponse({ ok: false, error: "falha na extração (página não respondeu)" });
+          return;
+        }
+        sendResponse(data);
+        return;
+      }
+      if (msg?.type === "liveVideoStart") {
+        let data = null;
+        try {
+          data = await runInTab(tab.id, "content/live-video.js", ["start"]);
+        } catch (e) {
+          sendResponse({ ok: false, error: String(e.message || e) });
+          return;
+        }
+        if (data?.ok) liveVideoTabId = tab.id;
+        sendResponse(data || { ok: false, error: "a página não respondeu — recarregue a aba e tente de novo" });
+        return;
+      }
+      if (msg?.type === "liveVideoStop") {
+        const stopTabId = liveVideoTabId || tab.id;
+        liveVideoTabId = null;
+        try {
+          await runInTab(stopTabId, "content/live-video.js", ["stop"]);
+          sendResponse({ ok: true });
+        } catch (e) {
+          sendResponse({ ok: false, error: String(e.message || e) });
+        }
+        return;
+      }
+      if (msg?.type === "liveVideoChunk") {
+        let delivered = false;
+        try {
+          delivered = (await chrome.runtime.sendMessage({
+            type: "liveVideoChunk",
+            b64: msg.b64,
+            mime: msg.mime,
+          }))?.ok === true;
+        } catch {}
+        sendResponse({ ok: delivered });
+        return;
+      }
+      if (msg?.type === "liveVideoError") {
+        try {
+          await chrome.runtime.sendMessage({ type: "liveVideoError", message: msg.message });
+        } catch {}
+        sendResponse({ ok: true });
         return;
       }
       sendResponse({ ok: false, error: "mensagem desconhecida" });

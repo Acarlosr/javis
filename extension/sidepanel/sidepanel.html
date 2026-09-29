@@ -54,8 +54,8 @@
       <div id="actions-menu" class="hidden">
         <button data-action="page">Resumir página</button>
         <div class="am-row">
-          <button data-action="youtube">Resumir YouTube</button>
-          <select id="yt-style" title="Estilo do resumo do YouTube">
+          <button data-action="youtube">Resumir vídeo</button>
+          <select id="yt-style" title="Estilo do resumo do vídeo">
             <option value="padrao">padrão</option>
             <option value="topicos">tópicos</option>
             <option value="indice">índice c/ tempos</option>
@@ -75,6 +75,8 @@
         <div class="am-row">
           <button data-action="live" id="live-btn">Live PT-BR</button>
           <select id="live-src" title="Fonte e idioma do áudio para o modo live">
+            <option value="video:en" selected>vídeo da página · inglês → PT</option>
+            <option value="video:pt">vídeo da página · português</option>
             <option value="tab:en">aba · inglês → PT</option>
             <option value="tab:pt">aba · português</option>
             <option value="mic:en">mic · inglês → PT</option>
@@ -105,6 +107,6 @@
       <button id="send" title="Enviar">↑</button>
     </footer>
 
-    <script src="sidepanel.js"></script>
+    <script type="module" src="sidepanel.js"></script>
   </body>
 </html>

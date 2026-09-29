@@ -8,15 +8,18 @@ Chromium) + um pequeno servidor local. Clique no ícone e ele abre ao lado da
 página, pronto para:
 
 - **Resumir a página atual** — em tópicos, direto ao ponto
-- **Resumir vídeos do YouTube** — com estilos: padrão, por tópicos ou índice
-  cronológico com timestamps (`[MM:SS] Assunto`)
+- **Resumir vídeos** — YouTube e outros players (Udemy, Coursera, sites de
+  cursos…) com estilos: padrão, por tópicos ou índice cronológico com
+  timestamps (`[MM:SS] Assunto`)
 - **Resumir canais do Discord por período** — 24h até 90 dias; ele rola o chat
   sozinho, coleta as mensagens e resume por assuntos, decisões e pendências
 - **Traduzir o que você selecionar** — selecione um texto e clique: para
   PT-BR ou para inglês, no Discord ou em qualquer site
-- **Live PT-BR** — transcreve ao vivo o áudio de uma live/AMA (aba ou
-  microfone) e traduz simultaneamente para português, com timestamps; no fim,
-  gera resumo e export `.md`
+- **Live PT-BR** — transcreve ao vivo o áudio de uma live/AMA e traduz
+  simultaneamente para português, com timestamps; no fim, gera resumo e export
+  `.md`. Três fontes: **vídeo da página** (áudio direto do player — aulas do
+  Udemy, Coursera e afins, sem diálogo de compartilhamento), **aba** (áudio da
+  guia — lives/AMAs) e **microfone**
 - **Traduzir página inteira** — conteúdo da aba ativa → PT-BR
 - **Chat livre** — pergunte qualquer coisa, com contexto da página e histórico
 - **Falar com o mordomo** — ditado por voz, com reconhecimento nativo ou
@@ -350,8 +353,8 @@ Abra a página/vídeo/canal desejado, clique no ícone do Javis e:
   ("resuma o youtube por tópicos", "resuma esta página", "traduza a página",
   "traduza isso para inglês", "live pelo microfone em português", "parar live",
   "resuma os últimos 20 dias" no Discord...). Parâmetros omitidos caem nos
-  padrões pré-configurados: YouTube → resumo padrão, Discord → 14 dias,
-  live → aba em inglês → PT-BR.
+  padrões pré-configurados: vídeo → resumo padrão, Discord → 14 dias,
+  live → vídeo da página em inglês → PT-BR.
 - Ou toque no botão **Ações ⚡** — um menu compacto com as mesmas ações e seus
   seletor de detalhes (estilo do resumo, período, fonte/idioma, idioma alvo).
 
@@ -359,11 +362,17 @@ Abra a página/vídeo/canal desejado, clique no ícone do Javis e:
 **Ações ⚡ → Resumir página** (ou escreva "resuma esta página"). Ele lê o texto
 visível da aba e responde em tópicos.
 
-### Resumir YouTube
-Abra o vídeo e use **Ações ⚡ → Resumir YouTube** escolhendo o **estilo** no
-menu (padrão / tópicos / índice com tempos) — ou escreva "resuma o youtube",
-"resuma o vídeo por tópicos", "faça o índice do vídeo". Funciona com `watch`,
-`shorts` e `live`; o índice usa os marcadores `[MM:SS]` da transcrição.
+### Resumir vídeo (YouTube e outros players)
+Abra o vídeo e use **Ações ⚡ → Resumir vídeo** escolhendo o **estilo** no menu
+(padrão / tópicos / índice com tempos) — ou escreva "resuma o youtube",
+"resuma o vídeo por tópicos", "faça o índice do vídeo".
+
+- No **YouTube** (`watch`, `shorts`, `live`) o Javis usa as legendas oficiais
+- Em **outros players** (Udemy, Coursera, plataformas de cursos, sites com
+  player HTML5) ele usa as legendas expostas pelo player, com os mesmos
+  marcadores `[MM:SS]`
+- Se o player não expõe legendas, o Javis orienta: use **Live → vídeo da
+  página** para transcrever o áudio com Whisper
 
 ### Discord: resumo por período
 Abra o canal e use **Ações ⚡ → Resumir Discord** escolhendo o **período**
@@ -383,22 +392,26 @@ Selecione o texto e use **Ações ⚡ → Traduzir seleção** com o idioma alvo
 inglês". O resultado aparece no painel, com botões copiar e `.md`.
 
 ### Live PT-BR
-1. **Ações ⚡ → Live PT-BR** escolhendo a **fonte**: `aba` (áudio da aba —
-   ideal para lives/AMAs) ou `mic`; e o idioma: `inglês → PT` ou `português`
-   — ou escreva "live pelo microfone em português"
+1. **Ações ⚡ → Live PT-BR** escolhendo a **fonte**: `vídeo da página` (áudio
+   direto do player — aulas do Udemy/Coursera e vídeos em geral, sem diálogo de
+   compartilhamento; o vídeo precisa estar tocando), `aba` (áudio da guia —
+   ideal para lives/AMAs) ou `mic`; e o idioma: `inglês → PT` ou `português` —
+   ou escreva "live pelo microfone em português"
 2. A transcrição vai aparecendo numa única bolha rolante com `[MM:SS]`
 3. Toque em **Parar live** (ou escreva "parar live") → gera **resumo** e botão
    de **export .md**
 
-> O diálogo de compartilhamento é normal quando a captura direta da aba não
-> está disponível: escolha a **guia** da live e deixe
-> **"Compartilhar áudio da guia"** marcado. Se o pipeline atrasar (live muito
-> rápida), o Javis descarta os trechos mais antigos para manter a tradução em
+> Na fonte **aba**, o diálogo de compartilhamento é normal quando a captura
+> direta não está disponível: escolha a **guia** da live e deixe
+> **"Compartilhar áudio da guia"** marcado. Se o áudio ficar silencioso, o
+> Javis avisa sozinho e sugere refazer. Se o pipeline atrasar (live muito
+> rápida), ele descarta os trechos mais antigos para manter a tradução em
 > PT-BR — prefere traduzir tudo a mostrar inglês.
 
-> Dica: use a fonte **Aba** para capturar o áudio do vídeo/áudio da call; o
-> microfone perto da caixa de som capta eco e distorce. Se a aba pedir
-> permissão de captura, permita.
+> Dica: para aulas em plataformas de cursos, prefira a fonte **Vídeo da
+> página** — ela captura o áudio direto do player, sem diálogo e sem risco de
+> esquecer o áudio da guia. Use **Aba** para capturar o áudio de calls/lives;
+> o microfone perto da caixa de som capta eco e distorce.
 
 ### Chat livre
 Escreva no campo e enter. O Javis usa o contexto da página atual. Cada resposta
@@ -459,9 +472,10 @@ curl -s -H "Authorization: Bearer $TOKEN" -H "content-type: application/json" \
 | Voz não funciona no Helium/Brave | serviço de voz do Google bloqueado | o Javis cai sozinho no ditado local; instale ffmpeg + whisper-cli |
 | "microfone negado" | permissão do SO/navegador | Configurações (⚙) → **Permitir microfone** → aceite no prompt |
 | Live não inicia / erro MediaRecorder | painel antigo na memória | recarregue a extensão **e reabra o painel lateral** |
-| Live não captura o áudio da aba | permissão de captura | escolha a fonte **Aba** e permita quando o navegador pedir |
+| Live não captura o áudio da aba | permissão de captura ou áudio esquecido | refaça marcando **"Compartilhar áudio da guia"**; o Javis avisa quando o áudio está silencioso |
+| Live não acha áudio do vídeo | player bloqueia captura ou vídeo pausado | dê play; se o player bloquear, use a fonte **Aba**; mensagens explicam cada caso |
 | Discord não coleta mensagens | canal sem histórico visível | role manualmente até ver mensagens e repita |
-| Resumo do YouTube vazio | vídeo sem legendas | o próprio Javis avisa; vídeo sem legenda não tem o que extrair |
+| Resumo do vídeo vazio | player sem legendas expostas | o próprio Javis orienta usar **Live → Vídeo da página** para transcrever o áudio |
 | Página não é lida | `chrome://` ou loja | o Chrome bloqueia; use páginas http(s) normais |
 
 ## Estrutura do repositório
@@ -481,6 +495,8 @@ extension/               extensão Manifest V3
   content/
     extract.js           extrai texto da página (injetado sob demanda)
     youtube.js           extrai transcrição/legendas do YouTube
+    video.js             extrai legendas de qualquer player HTML5 (textTracks)
+    live-video.js        captura o áudio do <video> da página p/ a Live
     discord.js           coleta mensagens do Discord com auto-scroll
     translator.js        botão flutuante de tradução por seleção (Discord)
 tests/
