@@ -4,7 +4,8 @@ const { after, before, describe, it } = await import("node:test");
 const assert = (await import("node:assert/strict")).default;
 const { createApp } = await import("../daemon/server.mjs");
 const { newToken, MASK, PRESETS } = await import("../daemon/config.mjs");
-const { validateMessages, mockChat, callProvider, clearAuth0Cache, fetchOpenAiModels } = await import("../daemon/provider.mjs");
+const { validateMessages, mockChat, callProvider, clearAuth0Cache, fetchOpenAiModels, countImages } = await import("../daemon/provider.mjs");
+const { parseFillsJson, extractJsonObj } = await import("../extension/sidepanel/lib/formfill.js");
 const http = (await import("node:http")).default;
 
 function listen(server) {
@@ -388,6 +389,75 @@ describe("provider", () => {
     assert.equal(PRESETS.nous.model, "Hermes-4-405B");
     assert.equal(PRESETS.deepseek.baseUrl, "https://api.deepseek.com/v1");
     assert.equal(PRESETS.deepseek.model, "deepseek-chat");
+  });
+});
+
+describe("multimodal (prints) + parse de formulário", () => {
+  const img = (chars = 100) => "data:image/png;base64," + "A".repeat(chars);
+
+  it("validateMessages aceita content com texto + imagem", () => {
+    const ok = [
+      { role: "user", content: [{ type: "text", text: "o que é isso?" }, { type: "image_url", image_url: { url: img() } }] },
+    ];
+    assert.equal(validateMessages(ok), null);
+  });
+
+  it("validateMessages recusa excessos de imagem", () => {
+    const five = [1, 2, 3, 4, 5].map(() => ({ type: "image_url", image_url: { url: img(10) } }));
+    assert.ok(validateMessages([{ role: "user", content: five }]));
+    assert.ok(validateMessages([{ role: "user", content: [{ type: "image_url", image_url: { url: img(4_600_000) } }] }]));
+  });
+
+  it("validateMessages recusa partes inválidas", () => {
+    assert.ok(validateMessages([{ role: "user", content: [{ type: "audio", data: "x" }] }]));
+    assert.ok(validateMessages([{ role: "user", content: [{ type: "image_url", image_url: { url: "data:text/html;base64,AAA" } }] }]));
+    assert.ok(validateMessages([{ role: "user", content: [] }]));
+    assert.ok(validateMessages([{ role: "user", content: [{ type: "text", text: 42 }] }]));
+  });
+
+  it("countImages conta imagens no histórico", () => {
+    assert.equal(countImages([{ role: "user", content: "texto" }]), 0);
+    assert.equal(
+      countImages([
+        { role: "user", content: [{ type: "text", text: "a" }, { type: "image_url", image_url: { url: img(10) } }] },
+        { role: "assistant", content: "ok" },
+      ]),
+      1
+    );
+  });
+
+  it("mockChat lida com array e menciona imagens", () => {
+    const r = mockChat([
+      { role: "user", content: [{ type: "text", text: "analise" }, { type: "image_url", image_url: { url: img(10) } }] },
+    ]);
+    assert.equal(r.ok, true);
+    assert.ok(r.text.includes("analise"));
+    assert.ok(r.text.includes("imagem"));
+  });
+
+  it("parseFillsJson lê JSON puro, cercado e com crases", () => {
+    assert.deepEqual(parseFillsJson('{"fills":[{"i":0,"value":"Ana"}]}'), [{ i: 0, value: "Ana" }]);
+    const wrapped = 'Claro!\n```json\n{"fills":[{"i":2,"value":"x@y.com"},{"i":5,"value":"true"}]}\n```';
+    assert.deepEqual(parseFillsJson(wrapped), [
+      { i: 2, value: "x@y.com" },
+      { i: 5, value: "true" },
+    ]);
+  });
+
+  it("parseFillsJson aceita aliases e checked; recusa lixo", () => {
+    assert.deepEqual(parseFillsJson('{"fills":[{"index":3,"valor":"Brasil"}]}'), [{ i: 3, value: "Brasil" }]);
+    assert.deepEqual(parseFillsJson('{"fills":[{"i":1,"checked":true}]}'), [{ i: 1, value: "true" }]);
+    assert.equal(parseFillsJson("sem json aqui"), null);
+    assert.equal(parseFillsJson('{"fills":[{"i":"a","value":1}]}'), null);
+    assert.equal(parseFillsJson('{"fills":[{"i":1}]}'), null);
+    assert.equal(parseFillsJson('{"outros":[]}'), null);
+  });
+
+  it("extractJsonObj acha o primeiro objeto balanceado", () => {
+    assert.deepEqual(extractJsonObj('texto {"a":1} resto'), { a: 1 });
+    assert.deepEqual(extractJsonObj('{"a":"tem } chave"}'), { a: "tem } chave" });
+    assert.equal(extractJsonObj("nada"), null);
+    assert.equal(extractJsonObj('{"aberto":'), null);
   });
 });
 

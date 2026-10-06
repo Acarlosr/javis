@@ -37,6 +37,8 @@ const INJECTORS = {
   "content/discord.js": "__anDiscord",
   "content/video.js": "__anVideo",
   "content/live-video.js": "__anLiveVideo",
+  "content/shot-picker.js": "__anShotPick",
+  "content/forms.js": "__anForms",
 };
 
 const TR_INJECTED = new Set();
@@ -101,6 +103,76 @@ async function runInTab(tabId, file, args = [], world = "ISOLATED") {
   return result?.result ?? null;
 }
 
+const SHOT_MAX_WIDTH = 1600;
+
+async function devicePixelRatioOf(tabId) {
+  try {
+    const [r] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "ISOLATED",
+      func: () => window.devicePixelRatio || 1,
+    });
+    return r?.result || 1;
+  } catch {
+    return 1;
+  }
+}
+
+async function toDataUrl(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 32768) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+  }
+  return "data:image/png;base64," + btoa(bin);
+}
+
+async function cropDataUrl(dataUrl, rect, dpr) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const bmp = await createImageBitmap(blob);
+  let sx = 0;
+  let sy = 0;
+  let sw = bmp.width;
+  let sh = bmp.height;
+  if (rect) {
+    sx = Math.round(rect.x * dpr);
+    sy = Math.round(rect.y * dpr);
+    sw = Math.max(1, Math.round(rect.w * dpr));
+    sh = Math.max(1, Math.round(rect.h * dpr));
+    sx = Math.max(0, Math.min(sx, bmp.width - 1));
+    sy = Math.max(0, Math.min(sy, bmp.height - 1));
+    sw = Math.min(sw, bmp.width - sx);
+    sh = Math.min(sh, bmp.height - sy);
+  }
+  let outW = sw;
+  let outH = sh;
+  if (outW > SHOT_MAX_WIDTH) {
+    outH = Math.max(1, Math.round(sh * (SHOT_MAX_WIDTH / sw)));
+    outW = SHOT_MAX_WIDTH;
+  }
+  const cnv = new OffscreenCanvas(outW, outH);
+  cnv.getContext("2d").drawImage(bmp, sx, sy, sw, sh, 0, 0, outW, outH);
+  bmp.close();
+  return toDataUrl(await cnv.convertToBlob({ type: "image/png" }));
+}
+
+async function captureShot(mode) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab || isRestricted(tab.url)) {
+    throw new Error("não dá para capturar esta aba (páginas internas do navegador são bloqueadas)");
+  }
+  let rect = null;
+  let dpr = await devicePixelRatioOf(tab.id);
+  if (mode === "area") {
+    const pick = await runInTab(tab.id, "content/shot-picker.js");
+    if (!pick || pick.ok === false) throw new Error(pick?.error || "seleção cancelada");
+    rect = pick.rect;
+    dpr = pick.dpr || dpr;
+  }
+  const full = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+  return cropDataUrl(full, rect, dpr);
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
     try {
@@ -143,6 +215,31 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       }
       if (msg?.type === "getTabInfo") {
         sendResponse({ ok: true, url: tab.url || "", title: tab.title || "" });
+        return;
+      }
+      if (msg?.type === "captureShot") {
+        try {
+          const image = await captureShot(msg.mode === "area" ? "area" : "full");
+          sendResponse({ ok: true, image });
+        } catch (e) {
+          sendResponse({ ok: false, error: String(e.message || e) });
+        }
+        return;
+      }
+      if (msg?.type === "collectForm") {
+        const data = await runInTab(tab.id, "content/forms.js", ["collect"]);
+        sendResponse(
+          data || { ok: false, error: "a página não respondeu — recarregue a aba e tente de novo" }
+        );
+        return;
+      }
+      if (msg?.type === "applyFormFill") {
+        const data = await runInTab(tab.id, "content/forms.js", [
+          "apply",
+          Array.isArray(msg.fills) ? msg.fills : [],
+          msg.expected,
+        ]);
+        sendResponse(data || { ok: false, error: "a página não respondeu" });
         return;
       }
       if (msg?.type === "getPageContext") {

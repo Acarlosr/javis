@@ -6,6 +6,8 @@ import { send } from "./chat.js";
 import { isLiveActive, startLive, stopLive } from "./live.js";
 import { askPage, autoCollectDiscord, youtubePrompt, discordCap } from "./context.js";
 import { partialNote, externalContent } from "./text.js";
+import { captureShot, clearPending, downloadShot, takePendingImage } from "./shots.js";
+import { parseFillsJson } from "./formfill.js";
 
 export function runPageSummary() {
   send("Resuma esta página em tópicos claros, com os pontos mais importantes primeiro.", {
@@ -72,6 +74,82 @@ export function runTranslatePage() {
   });
 }
 
+export async function runShot(mode) {
+  if (state.busy) return;
+  setBusy(true);
+  try {
+    await captureShot(mode);
+  } catch (e) {
+    addMsg("err", "print: " + (e?.message || e));
+  } finally {
+    setBusy(false);
+  }
+}
+
+const FORM_FILL_RULES =
+  "Responda APENAS com JSON válido no formato {\"fills\":[{\"i\":<índice>,\"value\":\"<valor>\"}]} — sem texto antes ou depois. " +
+  "Regras: nunca preencha campos de senha ou de cartão de crédito; deixe em branco o que precisar de dados pessoais que eu não forneci; " +
+  'para checkbox use "true" ou "false"; para select use exatamente uma das opções listadas; só inclua os campos que quiser preencher.';
+
+async function applyFillsFromAi(text, expected) {
+  const fills = parseFillsJson(text);
+  if (!fills?.length) {
+    return "Não consegui extrair os valores desta resposta para aplicar nos campos. Tente de novo com uma instrução mais direta.";
+  }
+  const r = await chrome.runtime.sendMessage({ type: "applyFormFill", fills, expected });
+  if (!r?.ok) throw new Error(r?.error || "falha ao aplicar os valores");
+  const parts = [];
+  parts.push(
+    r.filled?.length
+      ? "Preencheu " + r.filled.length + " campo(s): " + r.filled.join(", ")
+      : "Nenhum campo foi preenchido."
+  );
+  if (r.skipped?.length) {
+    parts.push(
+      "Deixei de lado: " + r.skipped.map((s) => s.label + " (" + s.reason + ")").join(", ")
+    );
+  }
+  parts.push(
+    "Revise os valores na página e envie o formulário você mesmo — o Javis nunca envia nada automaticamente."
+  );
+  return parts.join("\n");
+}
+
+export function runFormFill(instruction) {
+  const instr = (instruction || "").trim();
+  let fieldCount = null;
+  send(
+    instr ||
+      "Sugira valores plausíveis para os campos desta página, deixando em branco o que precisar de dados pessoais reais.",
+    {
+      label: instr ? "Preencher formulário" : "Preencher formulário (sugestões)",
+      onContext: async () => {
+        const r = await chrome.runtime.sendMessage({ type: "collectForm" });
+        if (!r?.ok) throw new Error(r?.error || "falha ao ler o formulário");
+        if (!r.count) throw new Error("nenhum campo de formulário visível nesta página");
+        fieldCount = r.count;
+        const list = r.fields
+          .map((f) => {
+            let s =
+              f.i + " | " + f.kind + (f.required ? " (obrigatório)" : "") + " | " + (f.label || f.name || "(sem rótulo)");
+            if (f.options?.length) s += " | opções: " + f.options.join(" / ");
+            if (f.current) s += " | valor atual: " + String(f.current).slice(0, 60);
+            return s;
+          })
+          .join("\n");
+        return {
+          note:
+            r.count + " campos na página" + (r.truncated ? " — lista truncada em " + r.count : ""),
+          prompt:
+            `Campos de formulário desta página (índice | tipo | rótulo):\n\n${externalContent(list)}\n\n` +
+            `Tarefa: ${instr || "sugira valores plausíveis, deixando em branco o que precisar de dados pessoais reais"}\n\n${FORM_FILL_RULES}`,
+        };
+      },
+      onDone: (text) => applyFillsFromAi(text, fieldCount),
+    }
+  );
+}
+
 function runDiscord(days) {
   const periodLabel = days === 1 ? "24h" : `${days} dias`;
   send(
@@ -125,10 +203,26 @@ export function detectIntent(text) {
   if (/(traduz|tradu[cç][ãa]o)/.test(t) && /(p[áa]gina|site|conte[úu]do|tudo)/.test(t)) {
     return { type: "translate" };
   }
+  const wantsShot =
+    /\b(print|printar|screenshot|captura|capturar|foto)\b/.test(t) && !/(impress)/.test(t);
+  if (wantsShot && (/(tela|p[áa]gina|aba|site)/.test(t) || t.split(/\s+/).length <= 2)) {
+    const area = /(sele|parte|regi[ãa]o|[áa]rea|recorte|trecho|peda[çc]o)/.test(t);
+    return { type: "shot", mode: area ? "area" : "full" };
+  }
+  if (
+    /(preench|fill)/.test(t) ||
+    (/(formul[áa]rio)/.test(t) && /(complet|preench|dados|campos)/.test(t))
+  ) {
+    return { type: "formfill", instruction: text };
+  }
   return null;
 }
 
-export function dispatch(text) {
+export function dispatch(text, opts = {}) {
+  if (opts.image) {
+    send(text, opts);
+    return;
+  }
   const it = detectIntent(text);
   if (it?.type === "live") {
     if (it.stop) {
@@ -152,6 +246,14 @@ export function dispatch(text) {
   }
   if (it?.type === "translate") {
     runTranslatePage();
+    return;
+  }
+  if (it?.type === "shot") {
+    runShot(it.mode);
+    return;
+  }
+  if (it?.type === "formfill") {
+    runFormFill(it.instruction);
     return;
   }
   send(text);
@@ -187,7 +289,31 @@ export function initActions() {
         runSelTrans($("sel-lang").value || "pt");
       } else if (action === "translate") {
         runTranslatePage();
+      } else if (action === "shot-full") {
+        runShot("full");
+      } else if (action === "shot-area") {
+        runShot("area");
+      } else if (action === "formfill") {
+        const v = $("input").value.trim();
+        $("input").value = "";
+        $("input").style.height = "auto";
+        runFormFill(v || null);
       }
     });
   });
+
+  $("attach-save").addEventListener("click", () => {
+    const img = $("attach-thumb").src;
+    if (img) downloadShot(img);
+  });
+  $("attach-analyze").addEventListener("click", () => {
+    if (state.busy) return;
+    const img = takePendingImage();
+    if (!img) return;
+    send("Analise esta captura de tela: descreva o que vê e aponte o que for relevante.", {
+      image: img,
+      label: "print da tela",
+    });
+  });
+  $("attach-remove").addEventListener("click", clearPending);
 }

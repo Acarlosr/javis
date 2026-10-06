@@ -6,6 +6,10 @@ import { healthCheck, setActiveProvider } from "./lib/api.js";
 import { $ } from "./lib/ui.js";
 import { initVoice } from "./lib/voice.js";
 import { initActions, dispatch } from "./lib/actions.js";
+import { takePendingImage } from "./lib/shots.js";
+
+const SHOT_AUTO_PROMPT =
+  "Analise esta captura de tela: descreva o que vê e aponte o que for relevante.";
 
 $("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -20,10 +24,12 @@ $("input").addEventListener("input", () => {
 
 $("send").addEventListener("click", () => {
   const v = $("input").value.trim();
-  if (!v) return;
+  const img = takePendingImage();
+  if (!v && !img) return;
   $("input").value = "";
   $("input").style.height = "auto";
-  dispatch(v);
+  const prompt = v || SHOT_AUTO_PROMPT;
+  dispatch(prompt, img ? { image: img, label: v ? undefined : "print da tela" } : {});
 });
 
 $("btn-config").addEventListener("click", () => chrome.runtime.openOptionsPage());

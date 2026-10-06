@@ -25,6 +25,14 @@ página, pronto para:
 - **Falar com o mordomo** — ditado por voz, com reconhecimento nativo ou
   transcrição 100% local via Whisper (funciona até em navegadores que bloqueiam
   o serviço de voz do Google, como o Helium)
+- **Print da tela analisável** — capture a tela toda ou só a área que você
+  selecionar (arrastando um retângulo na página). O print vai para a IA como
+  imagem (modelos com visão) junto com a sua pergunta; dá para salvar o `.png`
+  antes de descartar
+- **Preencher formulários com supervisão** — o Javis lê os campos visíveis da
+  página (rótulos, tipos, opções), sugere e preenche os valores conforme a sua
+  instrução — mas **nunca envia**: ele não toca no botão de submit; você revisa
+  tudo e envia com o seu próprio clique
 - **Nova seção + Histórico** — trocou de assunto/site? Clique no **+** e comece
   do zero. O botão do relógio abre o histórico de todas as seções: clique para
   reabrir uma conversa antiga (e continuar de onde parou), apague o que
@@ -423,6 +431,36 @@ você para de falar. Se o navegador bloquear o serviço de voz, o Javis alterna
 sozinho para o ditado local (Whisper) — e se o microfone estiver bloqueado,
 o botão **Permitir microfone** aparece nas **Configurações (⚙)**.
 
+### Print da tela (com análise por IA)
+No menu **Ações ⚡**: **Print da tela** captura a página inteira; **Print da
+área** deixa você arrastar um retângulo sobre a página (ESC cancela). O print
+fica pendente acima do campo de mensagem, com três botões:
+
+- **salvar** — baixa o `.png` sem chamar a IA
+- **analisar** — envia o print para a IA com uma pergunta padrão
+- **×** — descarta
+
+Ou escreva a sua pergunta e envie: o print vai anexado à mensagem
+(`"o que é esse erro?"`, `"transcreva o texto desta imagem"`…). Requer um
+provedor com modelo de visão (Gemini, GPT-4o, Claude via OpenRouter etc.);
+em modo teste o Javis avisa que só ecoa. Também funciona pelo chat digitando
+"print da tela" ou "print da área".
+
+### Preencher formulário (você envia)
+Com um formulário na página, use **Ações ⚡ → Preencher formulário** ou digite
+"preencha o formulário com…". O Javis lê os campos visíveis (rótulos, tipos,
+opções de `select`, valor atual), pergunta à IA o valor de cada um e **preenche
+os campos na própria página**, destacando cada um em verde. Limites de
+segurança, por desenho:
+
+- ele **nunca clica em enviar** (submit): revisar e enviar é sempre você
+- ele **não preenche campos de senha** nem dados de cartão
+- se o texto da instrução pedir algo que os campos não têm (ex.: uma opção que
+  não existe na lista), o campo fica de fora e o relatório explica
+
+Após preencher, aparece o resumo: o que foi preenchido, o que ficou de lado e
+o lembrete de que nada é enviado automaticamente.
+
 ---
 
 ## API local do daemon
@@ -436,7 +474,7 @@ Tudo exige `Authorization: Bearer <token>` e escuta só em `127.0.0.1`.
 | PUT | `/config` | atualiza provedores/porta/ativo |
 | POST | `/active` | troca o provedor ativo (`{"id": "..."}`) |
 | POST | `/test` | testa um provedor antes de salvar |
-| POST | `/chat` | chat com o LLM; `stream: true` = SSE |
+| POST | `/chat` | chat com o LLM; `stream: true` = SSE; aceita conteúdo multimodal (texto + imagem `data:image/...`) para modelos de visão |
 | POST | `/transcribe` | áudio base64 → texto (`lang`, `fast`) |
 
 Exemplos:
@@ -461,6 +499,11 @@ curl -s -H "Authorization: Bearer $TOKEN" -H "content-type: application/json" \
 - A chave do provedor fica **no seu daemon**, nunca na extensão
 - Nenhum dado trafega para "a nuvem do projeto" — só para o provedor que você
   configurou (ou zero, se usar Ollama)
+- **Formulários**: o preenchimento é somente leitura do ponto de vista do
+  envio — o Javis preenche campos, mas **nunca submete** o formulário, e se
+  recusa a preencher campos de senha ou cartão de crédito
+- **Prints**: a captura é da aba ativa, vai direto ao provedor que você
+  escolheu e pode ser baixada localmente; nada é armazenado no daemon
 
 ## Solução de problemas
 
@@ -499,6 +542,8 @@ extension/               extensão Manifest V3
     live-video.js        captura o áudio do <video> da página p/ a Live
     discord.js           coleta mensagens do Discord com auto-scroll
     translator.js        botão flutuante de tradução por seleção (Discord)
+    shot-picker.js       overlay de seleção de área para o print
+    forms.js             coleta e preenchimento seguro de formulários (sem submit)
 tests/
   test.mjs               testes unitários (node --test)
 ```

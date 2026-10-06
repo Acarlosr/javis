@@ -5,7 +5,7 @@ import { state } from "./state.js";
 
 export const $ = (id) => document.getElementById(id);
 
-export function addMsg(role, text, extra) {
+export function addMsg(role, text, extra, image) {
   const div = document.createElement("div");
   div.className = "msg " + role;
   if (extra) {
@@ -18,6 +18,15 @@ export function addMsg(role, text, extra) {
   body.className = "body";
   body.textContent = text;
   div.appendChild(body);
+  if (image) {
+    const img = document.createElement("img");
+    img.className = "shot";
+    img.src = image;
+    img.alt = "print da tela";
+    img.title = "Clique para abrir em tamanho real";
+    img.onclick = () => chrome.tabs.create({ url: image });
+    div.appendChild(img);
+  }
   if (role === "ai") {
     div.dataset.raw = text || "";
     const acts = document.createElement("div");

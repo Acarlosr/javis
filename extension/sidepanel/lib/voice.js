@@ -4,6 +4,7 @@ import { state } from "./state.js";
 import { $ } from "./ui.js";
 import { transcribeRecording } from "./api.js";
 import { send } from "./chat.js";
+import { takePendingImage } from "./shots.js";
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -37,6 +38,11 @@ function beginListening(hint) {
   $("mic").classList.add("on");
 }
 
+function sendVoice(text) {
+  const img = takePendingImage();
+  send(text, img ? { image: img } : undefined);
+}
+
 function stopVoice() {
   if (recognition) {
     hideListening();
@@ -46,7 +52,7 @@ function stopVoice() {
     try { r.stop(); } catch {}
     if (text) {
       $("input").value = "";
-      send(text);
+      sendVoice(text);
     }
     return;
   }
@@ -105,7 +111,7 @@ async function startRecorder() {
           return;
         }
         $("input").value = text;
-        send(text);
+        sendVoice(text);
       } catch (e) {
         hideListening();
         flashListeningHint("Falha na transcrição: " + (e.message || e), 3400);
@@ -151,7 +157,7 @@ function startSR() {
     const text = $("input").value.trim();
     if (text) {
       $("input").value = "";
-      send(text);
+      sendVoice(text);
     } else {
       flashListeningHint("não ouvi nada — clique no microfone e tente de novo", 2200);
     }

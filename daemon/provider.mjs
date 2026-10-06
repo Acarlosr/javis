@@ -1,5 +1,43 @@
 export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
+const MAX_IMAGES_PER_MESSAGE = 4;
+const MAX_IMAGE_URL_CHARS = 4_500_000;
+
+function textOf(content) {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((p) => p?.type === "text" && typeof p.text === "string")
+      .map((p) => p.text)
+      .join(" ");
+  }
+  return "";
+}
+
+function validateParts(content) {
+  if (!Array.isArray(content) || content.length === 0) return "content inválido";
+  if (content.length > 12) return "muitas partes de conteúdo (max 12)";
+  let images = 0;
+  for (const part of content) {
+    if (!part || typeof part !== "object") return "parte de conteúdo inválida";
+    if (part.type === "text") {
+      if (typeof part.text !== "string") return "parte text inválida";
+      if (part.text.length > 400_000) return "conteúdo muito grande (max 400k chars)";
+    } else if (part.type === "image_url") {
+      images++;
+      const url = part.image_url?.url;
+      if (typeof url !== "string" || !url.startsWith("data:image/")) {
+        return "imagem inválida (use data URL de imagem)";
+      }
+      if (url.length > MAX_IMAGE_URL_CHARS) return "imagem muito grande (max ~4MB)";
+    } else {
+      return "tipo de conteúdo não suportado: " + part.type;
+    }
+  }
+  if (images > MAX_IMAGES_PER_MESSAGE) return "muitas imagens (max 4 por mensagem)";
+  return null;
+}
+
 export function validateMessages(messages) {
   if (!Array.isArray(messages)) return "messages deve ser um array";
   if (messages.length === 0) return "messages vazio";
@@ -7,20 +45,34 @@ export function validateMessages(messages) {
   for (const m of messages) {
     if (!m || typeof m !== "object") return "mensagem inválida";
     if (!["system", "user", "assistant"].includes(m.role)) return "role inválido: " + m.role;
-    if (typeof m.content !== "string") return "content inválido";
-    if (m.content.length > 400_000) return "conteúdo muito grande (max 400k chars)";
+    if (typeof m.content === "string") {
+      if (m.content.length > 400_000) return "conteúdo muito grande (max 400k chars)";
+    } else {
+      const err = validateParts(m.content);
+      if (err) return err;
+    }
   }
   return null;
 }
 
+export function countImages(messages) {
+  let n = 0;
+  for (const m of messages || []) {
+    if (Array.isArray(m?.content)) n += m.content.filter((p) => p?.type === "image_url").length;
+  }
+  return n;
+}
+
 export function mockChat(messages) {
   const last = messages[messages.length - 1];
-  const head = (last?.content || "").slice(0, 200).replace(/\s+/g, " ");
+  const head = textOf(last?.content).slice(0, 200).replace(/\s+/g, " ");
+  const imgs = countImages(messages);
   return {
     ok: true,
     mock: true,
     text:
-      `[modo teste] Recebi sua mensagem: "${head}". ` +
+      `[modo teste] Recebi sua mensagem: "${head}".` +
+      (imgs ? ` (${imgs} imagem(ns) anexada(s) — para análise visual, configure um provedor com modelo de visão.) ` : " ") +
       `Este é um eco simulado do Javis (sem chave de API configurada). ` +
       `Mensagens no histórico: ${messages.length}.`,
   };

@@ -90,8 +90,21 @@
             <option value="en">→ EN</option>
           </select>
         </div>
+        <div class="am-row">
+          <button data-action="shot-full">Print da tela</button>
+          <button data-action="shot-area" title="Arraste um retângulo na página">Print da área</button>
+        </div>
+        <button data-action="formfill">Preencher formulário</button>
         <button data-action="translate">Página → PT-BR</button>
       </div>
+    </div>
+
+    <div id="attach-bar" class="hidden">
+      <img id="attach-thumb" alt="print pendente" />
+      <span class="a-note">print capturado — pergunte algo e envie</span>
+      <button id="attach-save" title="Salvar o print como .png">salvar</button>
+      <button id="attach-analyze" title="Enviar para análise agora">analisar</button>
+      <button id="attach-remove" title="Descartar o print">×</button>
     </div>
 
     <div id="listening" class="listening hidden">
