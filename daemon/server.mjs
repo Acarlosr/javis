@@ -64,7 +64,7 @@ export function createApp({ config, logger = () => {} } = {}) {
       sendJson(res, 200, {
         ok: true,
         name: "assistente-navegador",
-        version: "0.8.0",
+        version: "0.8.1",
         provider: active ? active.name : null,
         model: active ? active.model : null,
         hasKey: active ? Boolean(active.apiKey) || active.type === "auth0" : false,

@@ -366,6 +366,58 @@ describe("auth0 + provedor mock", () => {
     assert.equal(r.text, "direct ok");
     assert.equal(r.mock, undefined);
   });
+
+  it("callProvider não-stream lida com provedor que responde SSE mesmo com stream:false", async () => {
+    const sseUp = http.createServer((req, res) => {
+      if (req.url === "/v1/chat/completions") {
+        res.setHeader("content-type", "text/event-stream");
+        res.write('data: {"choices":[{"delta":{"content":"ol"}}]}\n\n');
+        res.write('data: {"choices":[{"delta":{"content":"á!"}}]}\n\n');
+        res.write("data: [DONE]\n\n");
+        res.end();
+        return;
+      }
+      res.writeHead(404).end();
+    });
+    const sport = await listen(sseUp);
+    try {
+      const r = await callProvider(
+        { type: "openai", baseUrl: `http://127.0.0.1:${sport}/v1`, model: "m", apiKey: "k" },
+        [{ role: "user", content: "oi" }]
+      );
+      assert.equal(r.text, "olá!");
+      const streamed = [];
+      const r2 = await callProvider(
+        { type: "openai", baseUrl: `http://127.0.0.1:${sport}/v1`, model: "m", apiKey: "k" },
+        [{ role: "user", content: "oi" }],
+        { onDelta: (d) => streamed.push(d) }
+      );
+      assert.equal(r2.text, "olá!");
+      assert.deepEqual(streamed, ["ol", "á!"]);
+    } finally {
+      await new Promise((resolve) => sseUp.close(resolve));
+    }
+  });
+
+  it("callProvider não-stream lê message.content em chunk final de SSE", async () => {
+    const sseUp = http.createServer((req, res) => {
+      res.setHeader("content-type", "text/event-stream");
+      res.write('data: {"choices":[{"delta":{}}]}\n\n');
+      res.write('data: {"choices":[{"message":{"content":"final"}}]}\n\n');
+      res.write("data: [DONE]\n\n");
+      res.end();
+    });
+    const sport = await listen(sseUp);
+    try {
+      const r = await callProvider(
+        { type: "openai", baseUrl: `http://127.0.0.1:${sport}/v1`, model: "m", apiKey: "k" },
+        [{ role: "user", content: "oi" }]
+      );
+      assert.equal(r.text, "final");
+    } finally {
+      await new Promise((resolve) => sseUp.close(resolve));
+    }
+  });
 });
 
 describe("provider", () => {

@@ -12,7 +12,12 @@
       <h2>Ponte local (daemon)</h2>
       <p class="hint">Rode <code>npm start</code> na pasta do projeto. O token está em <code>~/.config/assistente-navegador/bridge.json</code>.</p>
       <label>Porta <input id="port" type="number" value="57931" /></label>
-      <label>Token <input id="token" type="password" placeholder="cole o token do bridge.json" /></label>
+      <label>Token
+        <span class="secret-wrap">
+          <input id="token" type="password" placeholder="cole o token do bridge.json" autocomplete="off" spellcheck="false" />
+          <button type="button" class="eye-btn" data-eye-target="token" data-what="token" aria-label="Mostrar token"></button>
+        </span>
+      </label>
       <button id="connect">Conectar</button>
       <span id="test-result"></span>
     </section>
@@ -36,7 +41,7 @@
 
     <section id="editor" class="hidden">
       <h2 id="editor-title">Novo provedor</h2>
-      <p class="hint">Chave gravada aparece como <code>••••••</code> — não mexa para manter, ou digite uma nova para substituir.</p>
+      <p class="hint">Chave gravada aparece como <code>••••••</code> — não mexa para manter, ou digite uma nova para substituir. Use o olho ao lado do campo para conferir o que foi colado.</p>
       <label>Modelo pronto
         <select id="preset">
           <option value="">— escolha um pronto ou configure manual —</option>
@@ -59,12 +64,22 @@
         <button id="p-fetch-models">Buscar modelos</button>
         <span id="p-models-status" class="hint"></span>
       </div>
-      <label id="p-key-label">Chave de API <input id="p-key" type="password" placeholder="sua chave" /></label>
+      <label id="p-key-label">Chave de API
+        <span class="secret-wrap">
+          <input id="p-key" type="password" placeholder="sua chave" autocomplete="off" spellcheck="false" />
+          <button type="button" class="eye-btn" data-eye-target="p-key" data-what="chave de API" aria-label="Mostrar chave de API"></button>
+        </span>
+      </label>
       <fieldset id="p-auth0" class="hidden">
         <legend>Auth0 (client credentials)</legend>
         <label>Domínio <input id="p-domain" type="text" placeholder="seu-tenant.auth0.com" /></label>
         <label>Client ID <input id="p-client-id" type="text" /></label>
-        <label>Client Secret <input id="p-client-secret" type="password" /></label>
+        <label>Client Secret
+          <span class="secret-wrap">
+            <input id="p-client-secret" type="password" autocomplete="off" spellcheck="false" />
+            <button type="button" class="eye-btn" data-eye-target="p-client-secret" data-what="client secret" aria-label="Mostrar client secret"></button>
+          </span>
+        </label>
         <label>Audience <input id="p-audience" type="text" placeholder="https://api.suaempresa" /></label>
       </fieldset>
       <button id="p-save" class="primary">Salvar provedor</button>

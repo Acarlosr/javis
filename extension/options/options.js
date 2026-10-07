@@ -45,6 +45,46 @@ function note(text, cls = "") {
   if (text) setTimeout(() => (el.textContent = ""), 4000);
 }
 
+const EYE_ON =
+  '<svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF =
+  '<svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>';
+
+function wireEye(btn) {
+  const input = $(btn.dataset.eyeTarget);
+  if (!input) return;
+  btn.insertAdjacentHTML("beforeend", EYE_ON + EYE_OFF);
+  const what = btn.dataset.what || "valor";
+  const set = (show) => {
+    input.type = show ? "text" : "password";
+    btn.classList.toggle("showing", show);
+    const label = (show ? "Ocultar " : "Mostrar ") + what;
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+  };
+  btn.addEventListener("click", () => {
+    const show = input.type === "password";
+    set(show);
+    input.focus();
+    if (show && input.value === MASK) {
+      note(`O ${what} real fica só no daemon; o campo mostra ${MASK} para manter o valor salvo. Cole um novo para substituir.`);
+    }
+  });
+  set(false);
+}
+
+function stripMaskOnInput(el) {
+  el.addEventListener("input", () => {
+    const v = el.value;
+    if (v.includes(MASK) && v.trim() !== MASK) el.value = v.split(MASK).join("").trim();
+  });
+}
+
+function cleanSecret(v) {
+  const s = (v || "").trim();
+  return !s || s === MASK ? s : s.split(MASK).join("").trim();
+}
+
 async function loadBridge() {
   const data = await chrome.storage.local.get(["assistConfig"]);
   const c = data.assistConfig || {};
@@ -377,12 +417,12 @@ $("p-save").addEventListener("click", async () => {
     type: isAuth0 ? "auth0" : "openai",
     baseUrl: $("p-base").value.trim(),
     model: $("p-model").value.trim(),
-    apiKey: isAuth0 ? "" : $("p-key").value.trim(),
+    apiKey: isAuth0 ? "" : cleanSecret($("p-key").value),
     auth0: isAuth0
       ? {
           domain: $("p-domain").value.trim(),
           clientId: $("p-client-id").value.trim(),
-          clientSecret: $("p-client-secret").value.trim(),
+          clientSecret: cleanSecret($("p-client-secret").value),
           audience: $("p-audience").value.trim(),
         }
       : null,
@@ -399,6 +439,9 @@ $("p-save").addEventListener("click", async () => {
 });
 
 $("p-cancel").addEventListener("click", closeEditor);
+document.querySelectorAll(".eye-btn").forEach(wireEye);
+stripMaskOnInput($("p-key"));
+stripMaskOnInput($("p-client-secret"));
 $("add-provider").addEventListener("click", () => openEditor(null));
 $("active-provider").addEventListener("change", () => setActive($("active-provider").value || null));
 $("connect").addEventListener("click", connect);

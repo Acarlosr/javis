@@ -148,6 +148,40 @@ export function clearAuth0Cache() {
   auth0Cache.clear();
 }
 
+async function readSse(res, onDelta, { allowMessage = false } = {}) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let full = "";
+  let sawDelta = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === "[DONE]") continue;
+      try {
+        const json = JSON.parse(payload);
+        const choice = json?.choices?.[0];
+        const delta = choice?.delta?.content || "";
+        const piece =
+          delta || (allowMessage && !sawDelta ? choice?.message?.content || "" : "");
+        if (piece) {
+          if (delta) sawDelta = true;
+          full += piece;
+          if (onDelta) onDelta(piece);
+        }
+      } catch {}
+    }
+  }
+  return { ok: true, text: full };
+}
+
 export async function callProvider(profile, messages, { onDelta, signal } = {}) {
   if (!profile) {
     const r = mockChat(messages);
@@ -186,35 +220,10 @@ export async function callProvider(profile, messages, { onDelta, signal } = {}) 
     } catch {}
     throw new Error(`Provedor respondeu ${res.status}: ${detail}`);
   }
-  if (!onDelta) {
-    const data = await res.json();
-    const text = data?.choices?.[0]?.message?.content ?? "";
-    return { ok: true, text };
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let full = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop();
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === "[DONE]") continue;
-      try {
-        const json = JSON.parse(payload);
-        const delta = json?.choices?.[0]?.delta?.content || "";
-        if (delta) {
-          full += delta;
-          onDelta(delta);
-        }
-      } catch {}
-    }
-  }
-  return { ok: true, text: full };
+  if (onDelta) return readSse(res, onDelta);
+  const ctype = String(res.headers.get("content-type") || "").toLowerCase();
+  if (ctype.includes("text/event-stream")) return readSse(res, null, { allowMessage: true });
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content ?? "";
+  return { ok: true, text };
 }
