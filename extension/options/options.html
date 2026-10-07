@@ -36,7 +36,25 @@
         <select id="active-provider"><option value="">—</option></select>
       </label>
       <div id="provider-list"></div>
+      <div class="wizard-cta">
+        <button id="btn-gemini-wizard" class="primary">Criar chave grátis do Gemini (30s)</button>
+        <span class="hint">guia passo a passo — só precisa de uma conta Google</span>
+      </div>
       <button id="add-provider">+ Adicionar provedor</button>
+      <div id="gemini-wizard" class="wizard hidden">
+        <h3>Gemini grátis — passo a passo</h3>
+        <ol>
+          <li>Abra o AI Studio com o botão abaixo (pede login com a sua conta Google).</li>
+          <li>Clique em <strong>Criar chave de API</strong> (<em>Get API key → Create API key</em>).</li>
+          <li>Copie a chave que começa com <code>AIza</code>.</li>
+          <li>Volte nesta aba e cole no campo <strong>Chave de API</strong> — use o olho ao lado para conferir o que foi colado.</li>
+          <li>Clique em <strong>Salvar provedor</strong> e depois em <strong>Usar</strong> no card do Gemini.</li>
+        </ol>
+        <div class="wizard-btns">
+          <button id="gw-open" class="primary">Abrir AI Studio</button>
+          <button id="gw-close">Fechar guia</button>
+        </div>
+      </div>
     </section>
 
     <section id="editor" class="hidden">

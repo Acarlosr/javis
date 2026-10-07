@@ -366,6 +366,7 @@ function openEditor(p) {
 function closeEditor() {
   $("editor").classList.add("hidden");
   editingId = null;
+  showGeminiWizard(false);
 }
 
 async function fetchEditorModels({ openMenu = false } = {}) {
@@ -443,6 +444,22 @@ document.querySelectorAll(".eye-btn").forEach(wireEye);
 stripMaskOnInput($("p-key"));
 stripMaskOnInput($("p-client-secret"));
 $("add-provider").addEventListener("click", () => openEditor(null));
+
+const AI_STUDIO_URL = "https://aistudio.google.com/apikey";
+
+function showGeminiWizard(show) {
+  $("gemini-wizard").classList.toggle("hidden", !show);
+}
+
+$("btn-gemini-wizard").addEventListener("click", () => {
+  openEditor(null);
+  $("preset").value = "gemini";
+  $("preset").dispatchEvent(new Event("change"));
+  showGeminiWizard(true);
+  window.open(AI_STUDIO_URL, "_blank", "noopener");
+});
+$("gw-open").addEventListener("click", () => window.open(AI_STUDIO_URL, "_blank", "noopener"));
+$("gw-close").addEventListener("click", () => showGeminiWizard(false));
 $("active-provider").addEventListener("change", () => setActive($("active-provider").value || null));
 $("connect").addEventListener("click", connect);
 

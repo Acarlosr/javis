@@ -1,6 +1,6 @@
 {
   "name": "javis",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Javis — mordomo de IA local no navegador: resumos, YouTube, Discord, tradução, live, prints analisáveis e preenchimento supervisionado de formulários.",
   "type": "module",
   "private": true,

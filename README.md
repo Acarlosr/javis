@@ -115,7 +115,22 @@ Na primeira execução ele cria a pasta de dados em
 com dois arquivos:
 
 - **`bridge.json`** — contém o `token` e a `porta` (padrão `57931`). É a ponte
-  com a extensão. Copie o token; ele aparece no terminal na primeira execução.
+  com a extensão. Para ver o token, abra o arquivo:
+
+  ```bash
+  cat ~/.config/assistente-navegador/bridge.json
+  ```
+
+  No Windows: `type %USERPROFILE%\.config\assistente-navegador\bridge.json`
+
+  Vai aparecer algo como:
+
+  ```json
+  { "token": "a3f9c2...64 caracteres", "port": 57931 }
+  ```
+
+  Copie o valor do campo `"token"` (inteiro, sem as aspas) para colar na
+  extensão no passo 4.
 - **`config.json`** — provedores de IA configurados (veja a próxima seção).
 
 Deixe o terminal aberto (ou configure o start automático, seção abaixo).
@@ -133,7 +148,8 @@ Deixe o terminal aberto (ou configure o start automático, seção abaixo).
 ### 4. Conecte tudo
 
 1. Clique no ícone do Javis → abre o painel lateral
-2. Na primeira vez, vai pedir o token: cole o de `bridge.json` e clique em
+2. Na primeira vez, vai pedir o token: cole o de `bridge.json` (copiado no
+   passo 2 com `cat ~/.config/assistente-navegador/bridge.json`) e clique em
    **Testar conexão** → **Salvar**
    (ou em `chrome://extensions` → Javis → **Detalhes** → **Opções**)
 3. Pronto — o bolinho de status fica verde e o painel libera as ações
@@ -236,6 +252,11 @@ válida para listar modelos; o 9Router/Ollama respondem sem chave.
 5. **Salvar provedor** → **Usar** (vira o ativo)
 
 O seletor no topo do painel troca de provedor/modelo a qualquer momento.
+
+**Sem chave nenhuma?** Na página de opções há o botão **"Criar chave grátis do
+Gemini (30s)"** — abre o guia passo a passo e o AI Studio numa nova aba: login
+com a conta Google, "Criar chave de API", copiar a chave (`AIza…`), colar no
+campo (o olho ao lado deixa conferir), salvar e usar.
 
 ### Editando o arquivo (alternativa)
 

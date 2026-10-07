@@ -45,6 +45,21 @@ button {
 button.primary { background: #4c5bd4; color: #fff; border: none; margin-top: 16px; }
 button.danger { color: #c0392b; border-color: #e0b4b4; }
 button:hover { filter: brightness(0.97); }
+.wizard-cta { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.wizard-cta button.primary { margin-top: 0; }
+.wizard {
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid #b9c0ec;
+  border-left: 4px solid #4c5bd4;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.wizard h3 { margin: 0 0 8px; font-size: 14px; color: #4c5bd4; }
+.wizard ol { margin: 0 0 12px; padding-left: 20px; }
+.wizard li { margin: 4px 0; }
+.wizard-btns { display: flex; gap: 8px; }
+.wizard-btns button.primary { margin-top: 0; }
 .hidden { display: none !important; }
 .secret-wrap { position: relative; display: block; }
 .secret-wrap input { padding-right: 42px; }
